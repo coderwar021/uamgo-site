@@ -34,10 +34,10 @@
     </p>
     <div class="install">
       <span class="prompt">$</span>
-      <code id="cmd">curl -fsSL https://uamgo.com/cli/install.sh | bash</code>
+      <code id="cmd">npx @uamgo/code web</code>
       <button class="copy" type="button" data-copy="#cmd">复制</button>
     </div>
-    <p class="hint">macOS 与 Linux。Windows 用 PowerShell：<code>irm https://uamgo.com/cli/install.ps1 | iex</code></p>
+    <p class="hint">装好 Node.js 22.19+ 即可，无需先安装本产品。终端界面用 <code>npx @uamgo/code-tui</code>。</p>
   </div>
 
   <div class="grid">
@@ -56,22 +56,17 @@
   </div>
 
   <section id="install">
-    <h2>安装</h2>
-    <div class="two">
-      <div>
-        <h3>macOS / Linux</h3>
-        <pre>curl -fsSL https://uamgo.com/cli/install.sh | bash</pre>
-      </div>
-      <div>
-        <h3>Windows PowerShell</h3>
-        <pre>irm https://uamgo.com/cli/install.ps1 | iex</pre>
-      </div>
-    </div>
-    <p class="hint">网页界面需要本机已装 Node.js 22.19 或更新版本；终端界面无额外依赖。</p>
+    <h2>开始使用</h2>
+    <p class="hint" style="margin-top:0">不用先安装。装好 Node.js 22.19 或更新版本，直接运行：</p>
+    <pre>npx @uamgo/code web        <span class="c"># 网页界面</span>
+npx @uamgo/code-tui        <span class="c"># 终端界面</span></pre>
+    <p class="hint">终端界面是原生程序，它的包按平台分发，npm 只会装上与你系统匹配的那一份。</p>
   </section>
 
   <section>
-    <h2>使用</h2>
+    <h2>常驻安装</h2>
+    <p class="hint" style="margin-top:0">经常用的话装到本地，之后直接敲 <code>uamgo</code>：</p>
+    <pre>npm install -g @uamgo/code @uamgo/code-tui</pre>
     <pre>uamgo                  <span class="c"># 选择终端界面或网页界面</span>
 uamgo tui              <span class="c"># 直接进终端界面</span>
 uamgo web              <span class="c"># 直接开网页界面</span>
