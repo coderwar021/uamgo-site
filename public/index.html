@@ -3,55 +3,116 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>uamgo code</title>
-<style>
-  :root { color-scheme: light dark; }
-  body {
-    margin: 0; padding: 4rem 1.5rem; line-height: 1.7;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  }
-  main { max-width: 42rem; margin: 0 auto; }
-  h1 { font-size: 2rem; margin: 0 0 .5rem; }
-  .tagline { margin: 0 0 2.5rem; opacity: .75; }
-  pre {
-    padding: 1rem 1.25rem; border-radius: .5rem; overflow-x: auto;
-    background: light-dark(#f4f4f5, #18181b);
-  }
-  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  h2 { font-size: 1.1rem; margin: 2.5rem 0 .75rem; }
-  footer { margin-top: 4rem; font-size: .9rem; opacity: .7; }
-  a { color: inherit; }
-</style>
+<title>uamgo code — 终端与网页双界面的 AI 编码助手</title>
+<meta name="description" content="uamgo code 是一个运行在你自己机器上的 AI 编码助手，终端与网页两套界面，模型服务自行配置。">
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<main>
-  <h1>uamgo code</h1>
-  <p class="tagline">终端与网页双界面的 AI 编码助手。</p>
 
-  <h2>安装</h2>
-  <pre><code>curl -fsSL https://uamgo.com/cli/install.sh | bash</code></pre>
-  <p>Windows PowerShell：</p>
-  <pre><code>irm https://uamgo.com/cli/install.ps1 | iex</code></pre>
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">
+      <img src="/favicon.svg" alt="">
+      uamgo code
+    </a>
+    <nav>
+      <a href="#install">安装</a>
+      <a href="#config">配置</a>
+      <a href="/terms">用户协议</a>
+    </nav>
+  </div>
+</header>
 
-  <h2>使用</h2>
-  <p>装好后在终端输入 <code>uamgo</code>，会让你选择打开终端界面还是网页界面。也可以直接指定：</p>
-  <pre><code>uamgo tui    # 终端界面
-uamgo web    # 网页界面
-uamgo "修复这个测试"    # 带任务直接开始</code></pre>
+<main class="wrap">
 
-  <h2>配置模型</h2>
-  <p>两个界面共用一份配置，写在 <code>~/.uamgo/config.toml</code>：</p>
-  <pre><code>[model_providers.uamgo]
+  <div class="hero">
+    <h1>在你自己的机器上<br>与模型一起写代码</h1>
+    <p class="lede">
+      终端与网页两套界面，共用一份配置。代码、会话和工作区都留在本地，
+      模型服务由你自己指定。
+    </p>
+    <div class="install">
+      <span class="prompt">$</span>
+      <code id="cmd">curl -fsSL https://uamgo.com/cli/install.sh | bash</code>
+      <button class="copy" type="button" data-copy="#cmd">复制</button>
+    </div>
+    <p class="hint">macOS 与 Linux。Windows 用 PowerShell：<code>irm https://uamgo.com/cli/install.ps1 | iex</code></p>
+  </div>
+
+  <div class="grid">
+    <div class="cell">
+      <h3>两套界面</h3>
+      <p>输入 <code>uamgo</code> 选择进入终端界面或网页界面，两者共享会话与配置。</p>
+    </div>
+    <div class="cell">
+      <h3>本地运行</h3>
+      <p>agent 在你的机器上执行，读写你的工作区。我们不托管你的代码和会话记录。</p>
+    </div>
+    <div class="cell">
+      <h3>模型自选</h3>
+      <p>接口地址、密钥与请求头全部可配置，接任何 OpenAI 或 Anthropic 兼容的网关。</p>
+    </div>
+  </div>
+
+  <section id="install">
+    <h2>安装</h2>
+    <div class="two">
+      <div>
+        <h3>macOS / Linux</h3>
+        <pre>curl -fsSL https://uamgo.com/cli/install.sh | bash</pre>
+      </div>
+      <div>
+        <h3>Windows PowerShell</h3>
+        <pre>irm https://uamgo.com/cli/install.ps1 | iex</pre>
+      </div>
+    </div>
+    <p class="hint">网页界面需要本机已装 Node.js 22.19 或更新版本；终端界面无额外依赖。</p>
+  </section>
+
+  <section>
+    <h2>使用</h2>
+    <pre>uamgo                  <span class="c"># 选择终端界面或网页界面</span>
+uamgo tui              <span class="c"># 直接进终端界面</span>
+uamgo web              <span class="c"># 直接开网页界面</span>
+uamgo "修复这个测试"     <span class="c"># 带上任务直接开始</span></pre>
+  </section>
+
+  <section id="config">
+    <h2>配置模型</h2>
+    <p class="hint" style="margin-top:0">两套界面读同一份 <code>~/.uamgo/config.toml</code>，只需配置一次。</p>
+    <pre>[model_providers.uamgo]
 base_url = "https://你的网关/v1"
-env_key = "UAMGO_API_KEY"</code></pre>
+env_key = "UAMGO_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span>
 
-  <h2>环境要求</h2>
-  <p>网页界面需要本机已安装 Node.js 22.19 或更新版本；终端界面无额外依赖。</p>
+[model_providers.uamgo.extra_headers]
+"x-tenant" = "acme"</pre>
+  </section>
 
-  <footer>
-    <a href="/terms">用户协议</a>
-  </footer>
 </main>
+
+<footer class="wrap">
+  <a href="/terms">用户协议</a>
+  <span class="spacer">© 2026 Uamgo</span>
+</footer>
+
+<script>
+  // Progressive: the command stays selectable if the clipboard is unavailable.
+  for (const button of document.querySelectorAll('.copy')) {
+    button.addEventListener('click', async () => {
+      const source = document.querySelector(button.dataset.copy)
+      if (source === null) return
+      try {
+        await navigator.clipboard.writeText(source.textContent.trim())
+        const previous = button.textContent
+        button.textContent = '已复制'
+        setTimeout(() => { button.textContent = previous }, 1600)
+      } catch {
+        getSelection()?.selectAllChildren(source)
+      }
+    })
+  }
+</script>
+
 </body>
 </html>

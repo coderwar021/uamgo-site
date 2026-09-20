@@ -4,29 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>用户协议 — uamgo code</title>
-<style>
-  :root { color-scheme: light dark; }
-  body {
-    margin: 0; padding: 4rem 1.5rem; line-height: 1.8;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  }
-  main { max-width: 44rem; margin: 0 auto; }
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.05rem; margin: 2rem 0 .5rem; }
-  .draft {
-    padding: .75rem 1rem; border-radius: .5rem; margin: 1.5rem 0;
-    background: light-dark(#fef3c7, #422006);
-  }
-  a { color: inherit; }
-  footer { margin-top: 3rem; font-size: .9rem; opacity: .7; }
-</style>
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<main>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="/">
+      <img src="/favicon.svg" alt="">
+      uamgo code
+    </a>
+    <nav>
+      <a href="/#install">安装</a>
+      <a href="/#config">配置</a>
+      <a href="/terms">用户协议</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap prose">
   <h1>用户协议</h1>
 
-  <p class="draft">
+  <p class="notice">
     <strong>待法务确认。</strong>以下为条款骨架，列出本产品实际需要约定的事项，
     正式文本请由法务补充后替换本页。
   </p>
@@ -53,10 +53,12 @@
 
   <h2>六、联系方式</h2>
   <p>待补充。</p>
-
-  <footer>
-    <a href="/">返回首页</a>
-  </footer>
 </main>
+
+<footer class="wrap">
+  <a href="/">返回首页</a>
+  <span class="spacer">© 2026 Uamgo</span>
+</footer>
+
 </body>
 </html>

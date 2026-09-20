@@ -1,0 +1,165 @@
+/* Tokens lifted from the product's own theme so the site and the app agree. */
+:root {
+  --brand-50: rgb(237 243 254);
+  --brand-100: rgb(228 237 253);
+  --brand-300: rgb(183 200 254);
+  --brand-400: rgb(103 158 254);
+  --brand-450: rgb(86 134 254);
+  --brand-500: rgb(65 118 230);
+  --brand-600: rgb(72 104 178);
+  --brand-900: rgb(40 49 66);
+
+  --n-00: rgb(255 255 255);
+  --n-50: rgb(249 250 251);
+  --n-75: rgb(241 243 245);
+  --n-100: rgb(235 238 242);
+  --n-400: rgb(173 178 184);
+  --n-600: rgb(129 133 140);
+  --n-700: rgb(97 102 107);
+  --n-800: rgb(53 54 56);
+  --n-850: rgb(44 44 46);
+  --n-900: rgb(27 27 28);
+  --n-950: rgb(21 21 23);
+
+  --bg: var(--n-00);
+  --bg-raised: var(--n-50);
+  --bg-code: var(--n-75);
+  --line: var(--n-100);
+  --text: var(--n-900);
+  --text-dim: var(--n-700);
+  --text-faint: var(--n-600);
+  --accent: var(--brand-500);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --page: 64rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--n-950);
+    --bg-raised: var(--n-900);
+    --bg-code: var(--n-850);
+    --line: rgb(255 255 255 / 0.08);
+    --text: var(--n-50);
+    --text-dim: var(--n-400);
+    --text-faint: var(--n-600);
+    --accent: var(--brand-400);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); }
+
+.wrap { max-width: var(--page); margin: 0 auto; padding: 0 1.5rem; }
+
+/* Header */
+header {
+  position: sticky; top: 0; z-index: 10;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+header .wrap { display: flex; align-items: center; gap: 1.5rem; height: 3.5rem; }
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 600; letter-spacing: -.01em; }
+.brand img { width: 24px; height: 24px; border-radius: 6px; }
+header nav { margin-left: auto; display: flex; gap: 1.5rem; font-size: .9rem; color: var(--text-dim); }
+
+/* Hero */
+.hero { padding: 6rem 0 3.5rem; text-align: center; }
+.hero h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1.1;
+  letter-spacing: -.035em;
+  font-weight: 640;
+}
+.hero .lede {
+  margin: 0 auto 2.5rem;
+  max-width: 34rem;
+  font-size: 1.15rem;
+  color: var(--text-dim);
+}
+
+/* The install line is the page's primary action. */
+.install {
+  display: inline-flex; align-items: center; gap: .75rem;
+  padding: .85rem 1rem .85rem 1.25rem;
+  border: 1px solid var(--line); border-radius: .75rem;
+  background: var(--bg-raised);
+  font-family: var(--font-code); font-size: .95rem;
+  text-align: left;
+}
+.install .prompt { color: var(--text-faint); user-select: none; }
+.install code { white-space: nowrap; overflow-x: auto; }
+.copy {
+  flex: none; padding: .3rem .7rem; border: 1px solid var(--line); border-radius: .45rem;
+  background: var(--bg); color: var(--text-dim);
+  font: inherit; font-size: .8rem; cursor: pointer;
+}
+.copy:hover { color: var(--accent); border-color: var(--accent); }
+.hint { margin-top: 1rem; font-size: .875rem; color: var(--text-faint); }
+
+/* Feature grid. Three cells, so the columns step 3 -> 1 rather than through 2,
+   where the odd cell would leave a gap the seam background shows through. */
+.grid {
+  display: grid; gap: 1px; margin: 1rem 0 4rem;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--line); border: 1px solid var(--line); border-radius: .875rem;
+  overflow: hidden;
+}
+@media (max-width: 44rem) {
+  .grid { grid-template-columns: 1fr; }
+}
+.cell { padding: 1.75rem; background: var(--bg); }
+.cell h3 { margin: 0 0 .5rem; font-size: 1rem; font-weight: 600; }
+.cell p { margin: 0; font-size: .925rem; color: var(--text-dim); }
+
+/* Sections */
+section { padding: 3.5rem 0; border-top: 1px solid var(--line); }
+section h2 {
+  margin: 0 0 1.5rem; font-size: 1.35rem; font-weight: 620; letter-spacing: -.02em;
+}
+pre {
+  margin: 0; padding: 1.1rem 1.25rem; overflow-x: auto;
+  background: var(--bg-code); border: 1px solid var(--line); border-radius: .625rem;
+  font-family: var(--font-code); font-size: .9rem; line-height: 1.7;
+}
+pre .c { color: var(--text-faint); }
+.two { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+.two h3 { margin: 0 0 .6rem; font-size: .95rem; font-weight: 600; }
+
+footer {
+  padding: 3rem 0 4rem; border-top: 1px solid var(--line);
+  font-size: .875rem; color: var(--text-faint);
+  display: flex; gap: 1.5rem; flex-wrap: wrap;
+}
+footer .spacer { margin-left: auto; }
+
+/* Terms page */
+.prose { padding: 4rem 0; max-width: 44rem; }
+.prose h1 { font-size: 2rem; letter-spacing: -.03em; margin: 0 0 2rem; }
+.prose h2 { font-size: 1.05rem; margin: 2.25rem 0 .5rem; }
+.prose p { color: var(--text-dim); }
+.notice {
+  padding: .9rem 1.1rem; margin: 0 0 2rem;
+  border: 1px solid var(--brand-300); border-radius: .625rem;
+  background: color-mix(in srgb, var(--brand-100) 45%, transparent);
+  color: var(--text); font-size: .925rem;
+}
+@media (prefers-color-scheme: dark) {
+  .notice { background: color-mix(in srgb, var(--brand-900) 55%, transparent); border-color: var(--brand-600); }
+}
