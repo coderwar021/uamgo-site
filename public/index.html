@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>uamgo code</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; padding: 4rem 1.5rem; line-height: 1.7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  main { max-width: 42rem; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 0 0 .5rem; }
+  .tagline { margin: 0 0 2.5rem; opacity: .75; }
+  pre {
+    padding: 1rem 1.25rem; border-radius: .5rem; overflow-x: auto;
+    background: light-dark(#f4f4f5, #18181b);
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  h2 { font-size: 1.1rem; margin: 2.5rem 0 .75rem; }
+  footer { margin-top: 4rem; font-size: .9rem; opacity: .7; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>uamgo code</h1>
+  <p class="tagline">终端与网页双界面的 AI 编码助手。</p>
+
+  <h2>安装</h2>
+  <pre><code>curl -fsSL https://uamgo.com/cli/install.sh | bash</code></pre>
+  <p>Windows PowerShell：</p>
+  <pre><code>irm https://uamgo.com/cli/install.ps1 | iex</code></pre>
+
+  <h2>使用</h2>
+  <p>装好后在终端输入 <code>uamgo</code>，会让你选择打开终端界面还是网页界面。也可以直接指定：</p>
+  <pre><code>uamgo tui    # 终端界面
+uamgo web    # 网页界面
+uamgo "修复这个测试"    # 带任务直接开始</code></pre>
+
+  <h2>配置模型</h2>
+  <p>两个界面共用一份配置，写在 <code>~/.uamgo/config.toml</code>：</p>
+  <pre><code>[model_providers.uamgo]
+base_url = "https://你的网关/v1"
+env_key = "UAMGO_API_KEY"</code></pre>
+
+  <h2>环境要求</h2>
+  <p>网页界面需要本机已安装 Node.js 22.19 或更新版本；终端界面无额外依赖。</p>
+
+  <footer>
+    <a href="/terms">用户协议</a>
+  </footer>
+</main>
+</body>
+</html>

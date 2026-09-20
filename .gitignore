@@ -1,0 +1,2 @@
+# Release binaries are published by CI, not committed.
+public/cli/uamgo-*

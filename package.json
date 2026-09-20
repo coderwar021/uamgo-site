@@ -1,0 +1,10 @@
+{
+  "name": "@uamgo/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static site for uamgo.com: terms of use, installer, and release artifacts.",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}
