@@ -31,6 +31,13 @@ function resolveTarget(url) {
   return target
 }
 
+// `uamgo.com/install.sh` is the advertised install command, but the script
+// itself belongs to the release it installs. Redirecting keeps one copy: the
+// asset published with the newest release, rather than a copy here that drifts.
+const INSTALLER_PATH = '/install.sh'
+const INSTALLER_ASSET
+  = 'https://github.com/coderwar021/uamgo-site/releases/latest/download/install.sh'
+
 /** Accept `/terms` for `terms.html` and a directory for its index. */
 async function fileFor(target) {
   for (const candidate of [target, `${target}.html`, join(target, 'index.html')]) {
@@ -48,6 +55,11 @@ const server = createServer((request, response) => {
   void (async () => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(405, { allow: 'GET, HEAD' }).end('Method Not Allowed')
+      return
+    }
+    const requested = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname)
+    if (requested === INSTALLER_PATH) {
+      response.writeHead(302, { location: INSTALLER_ASSET, 'cache-control': 'no-cache' }).end()
       return
     }
     const target = resolveTarget(request.url ?? '/')

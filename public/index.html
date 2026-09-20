@@ -34,10 +34,10 @@
     </p>
     <div class="install">
       <span class="prompt">$</span>
-      <code id="cmd">npx @uamgo/code web</code>
+      <code id="cmd">curl -fsSL https://uamgo.com/install.sh | sh</code>
       <button class="copy" type="button" data-copy="#cmd">复制</button>
     </div>
-    <p class="hint">装好 Node.js 22.19+ 即可，无需先安装本产品。终端界面用 <code>npx @uamgo/code-tui</code>。</p>
+    <p class="hint">一条命令装好两套界面。都是自包含程序，不需要 Node.js，也不需要编译器。</p>
   </div>
 
   <div class="grid">
@@ -57,16 +57,12 @@
 
   <section id="install">
     <h2>开始使用</h2>
-    <p class="hint" style="margin-top:0">不用先安装。装好 Node.js 22.19 或更新版本，直接运行：</p>
-    <pre>npx @uamgo/code web        <span class="c"># 网页界面</span>
-npx @uamgo/code-tui        <span class="c"># 终端界面</span></pre>
-    <p class="hint">终端界面是原生程序，它的包按平台分发，npm 只会装上与你系统匹配的那一份。</p>
-  </section>
-
-  <section>
-    <h2>常驻安装</h2>
-    <p class="hint" style="margin-top:0">经常用的话装到本地，之后直接敲 <code>uamgo</code>：</p>
-    <pre>npm install -g @uamgo/code @uamgo/code-tui</pre>
+    <p class="hint" style="margin-top:0">支持 macOS 与 Linux 的 x86_64 和 arm64：</p>
+    <pre>curl -fsSL https://uamgo.com/install.sh | sh</pre>
+    <p class="hint">
+      程序装在 <code>~/.uamgo/bin</code>，安装完会提示你把它加进 <code>PATH</code>。
+      换目录用 <code>UAMGO_INSTALL_DIR</code>，装指定版本用 <code>--version &lt;tag&gt;</code>。
+    </p>
     <pre>uamgo                  <span class="c"># 选择终端界面或网页界面</span>
 uamgo tui              <span class="c"># 直接进终端界面</span>
 uamgo web              <span class="c"># 直接开网页界面</span>
