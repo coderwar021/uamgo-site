@@ -14,6 +14,7 @@ import {
   userForToken,
   validateCredentials,
 } from './accounts.mjs'
+import { createWaffoCheckout, paymentsReady } from './waffo.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
@@ -85,56 +86,6 @@ function cookieHeaders(request, token, clear = false) {
   return {
     'set-cookie': sessionCookie(isSecure(request), clear ? '' : token, clear ? 0 : SESSION_AGE),
   }
-}
-
-function paymentsReady() {
-  const slug = process.env.WAFFO_STORE_SLUG ?? ''
-  const product = process.env.WAFFO_PRODUCT_ID
-    ?? process.env.WAFFO_PRODUCT_GROUP5
-    ?? process.env.WAFFO_PRODUCT_GROUP6
-    ?? ''
-  return slug.length > 0 && product.length > 0
-}
-
-function productForPlan(planId) {
-  const named = process.env[`WAFFO_PRODUCT_${planId.toUpperCase()}`]
-  if (typeof named === 'string' && named.length > 0) return named
-  return process.env.WAFFO_PRODUCT_ID ?? ''
-}
-
-/**
- * Ask Waffo for a hosted checkout URL. Missing env must not invent a dead link.
- * @param order stored order
- * @param email buyer email
- * @returns checkout URL or undefined
- */
-async function createWaffoCheckout(order, email) {
-  const slug = process.env.WAFFO_STORE_SLUG ?? ''
-  const productId = productForPlan(order.plan_id)
-  if (slug.length === 0 || productId.length === 0) return undefined
-  const response = await fetch('https://api.waffo.ai/v1/actions/checkout/create-session', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'X-Store-Slug': slug,
-      'X-Environment': process.env.WAFFO_ENVIRONMENT ?? 'prod',
-    },
-    body: JSON.stringify({
-      productId,
-      productType: 'onetime',
-      currency: process.env.WAFFO_CURRENCY ?? 'CNY',
-      buyerEmail: email,
-      metadata: {
-        order_id: order.id,
-        plan_id: order.plan_id,
-        hours: String(order.hours),
-      },
-      successUrl: `https://madecoding.com/deploy?order=${order.id}`,
-    }),
-  })
-  const payload = await response.json().catch(() => ({}))
-  const url = payload?.data?.checkoutUrl
-  return typeof url === 'string' && url.startsWith('https://') ? url : undefined
 }
 
 const PLANS = [
@@ -235,7 +186,7 @@ async function handleApi(request, response) {
     if (!paymentsReady()) {
       sendJson(response, 503, {
         error: 'payments_unconfigured',
-        message: '支付未开通：Railway 还没有配置 WAFFO_STORE_SLUG 和 WAFFO_PRODUCT_ID，不会跳到空页面。',
+        message: '支付未开通：在 Railway 配置 WAFFO_MERCHANT_ID、WAFFO_PRIVATE_KEY（控制台下载的 RSA 私钥，也可写成 WAFFO_API_KEY）和 WAFFO_PRODUCT_ID（PROD_ 开头）。私钥创建时已绑定 test 或 prod，不要再填 Store Slug。',
       })
       return true
     }
@@ -265,15 +216,20 @@ async function handleApi(request, response) {
       status: 'pending_payment',
     }
     let checkout
+    let waffoError
     try {
-      checkout = await createWaffoCheckout(order, user.email)
-    } catch {
-      checkout = undefined
+      const created = await createWaffoCheckout(order, user.email, plan.price_cny_per_hour)
+      checkout = created.checkout
+      waffoError = created.error
+    } catch (error) {
+      waffoError = error instanceof Error ? error.message : 'sign'
     }
     if (checkout === undefined) {
       sendJson(response, 503, {
         error: 'checkout',
-        message: '支付接口没有返回收银台地址。检查 WAFFO_STORE_SLUG、商品 ID 和环境（test/prod）。',
+        message: waffoError === undefined
+          ? '支付接口没有返回收银台地址。核对 Merchant ID、私钥是否对应同一把 key，以及商品 ID 是否为 PROD_。'
+          : `支付接口拒绝：${waffoError}`,
       })
       return true
     }
