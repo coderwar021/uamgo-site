@@ -149,6 +149,27 @@ footer {
 }
 footer .spacer { margin-left: auto; }
 
+.rental {
+  display: grid;
+  gap: 1rem;
+  max-width: 28rem;
+}
+.rental label { display: grid; gap: .35rem; font-size: .875rem; color: var(--text-dim); }
+.rental input, .rental select {
+  padding: .55rem .7rem; border: 1px solid var(--line); border-radius: .5rem;
+  background: var(--bg-raised); color: var(--text); font: inherit;
+}
+.rental-actions { display: flex; gap: .75rem; }
+.rental button {
+  padding: .45rem .9rem; border: 1px solid var(--line); border-radius: .5rem;
+  background: var(--bg); color: var(--text); font: inherit; cursor: pointer;
+}
+.rental button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.rental button:disabled { opacity: .5; cursor: not-allowed; }
+.rental dl { margin: 0; }
+.rental dt { font-size: .8rem; color: var(--text-faint); margin-top: .75rem; }
+.rental dd { margin: .15rem 0 0; font-family: var(--font-code); word-break: break-all; }
+
 /* Terms page */
 .prose { padding: 4rem 0; max-width: 44rem; }
 .prose h1 { font-size: 2rem; letter-spacing: -.03em; margin: 0 0 2rem; }

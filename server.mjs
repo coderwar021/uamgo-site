@@ -31,7 +31,7 @@ function resolveTarget(url) {
   return target
 }
 
-// `uamgo.com/install.sh` is the advertised install command, but the script
+// `madecoding.com/install.sh` is the advertised install command, but the script
 // itself belongs to the release it installs. Redirecting keeps one copy: the
 // asset published with the newest release, rather than a copy here that drifts.
 const INSTALLER_PATH = '/install.sh'
@@ -79,5 +79,5 @@ const server = createServer((request, response) => {
 })
 
 server.listen(PORT, () => {
-  process.stdout.write(`uamgo.com listening on :${PORT}\n`)
+  process.stdout.write(`madecoding.com listening on :${PORT}\n`)
 })

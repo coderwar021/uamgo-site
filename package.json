@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Static site for uamgo.com: terms of use, installer, and release artifacts.",
+  "description": "Static site for madecoding.com: terms of use, installer, and GPU-server purchase.",
   "scripts": {
     "start": "node server.mjs"
   }

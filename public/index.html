@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>uamgo code — 终端与网页双界面的 AI 编码助手</title>
-<meta name="description" content="uamgo code 是一个运行在你自己机器上的 AI 编码助手，终端与网页两套界面，模型服务自行配置。">
+<title>madecoding — 终端与网页双界面的 AI 编码助手</title>
+<meta name="description" content="madecoding 是一个运行在你自己机器上的 AI 编码助手，终端与网页两套界面。也可按小时购买独立模型服务器。">
 <link rel="icon" href="/favicon.svg">
 <link rel="stylesheet" href="/styles.css">
 </head>
@@ -14,10 +14,11 @@
   <div class="wrap">
     <a class="brand" href="/">
       <img src="/favicon.svg" alt="">
-      uamgo code
+      madecoding
     </a>
     <nav>
       <a href="#install">安装</a>
+      <a href="#deploy">模型部署</a>
       <a href="#config">配置</a>
       <a href="/terms">用户协议</a>
     </nav>
@@ -29,12 +30,12 @@
   <div class="hero">
     <h1>在你自己的机器上<br>与模型一起写代码</h1>
     <p class="lede">
-      终端与网页两套界面，共用一份配置。代码、会话和工作区都留在本地，
-      模型服务由你自己指定。
+      终端与网页两套界面，共用一份配置。代码、会话和工作区都留在本地。
+      需要独立 GPU 服务器时，在本页按小时购买。
     </p>
     <div class="install">
       <span class="prompt">$</span>
-      <code id="cmd">curl -fsSL https://uamgo.com/install.sh | sh</code>
+      <code id="cmd">curl -fsSL https://madecoding.com/install.sh | sh</code>
       <button class="copy" type="button" data-copy="#cmd">复制</button>
     </div>
     <p class="hint">一条命令装好两套界面。都是自包含程序，不需要 Node.js，也不需要编译器。</p>
@@ -43,52 +44,83 @@
   <div class="grid">
     <div class="cell">
       <h3>两套界面</h3>
-      <p>输入 <code>uamgo</code> 选择进入终端界面或网页界面，两者共享会话与配置。</p>
+      <p>输入 <code>madecoding</code> 选择进入终端界面或网页界面，两者共享会话与配置。</p>
     </div>
     <div class="cell">
       <h3>本地运行</h3>
       <p>agent 在你的机器上执行，读写你的工作区。我们不托管你的代码和会话记录。</p>
     </div>
     <div class="cell">
-      <h3>模型自选</h3>
-      <p>接口地址、密钥与请求头全部可配置，接任何 OpenAI 或 Anthropic 兼容的网关。</p>
+      <h3>模型部署</h3>
+      <p>按小时购买独立服务器。支付完成后签发我们的地址和密钥，不把源站交给买家。</p>
     </div>
   </div>
 
   <section id="install">
     <h2>开始使用</h2>
     <p class="hint" style="margin-top:0">支持 macOS 与 Linux 的 x86_64 和 arm64：</p>
-    <pre>curl -fsSL https://uamgo.com/install.sh | sh</pre>
+    <pre>curl -fsSL https://madecoding.com/install.sh | sh</pre>
     <p class="hint">
-      程序装在 <code>~/.uamgo/bin</code>，安装完会提示你把它加进 <code>PATH</code>。
-      换目录用 <code>UAMGO_INSTALL_DIR</code>，装指定版本用 <code>--version &lt;tag&gt;</code>。
+      程序装在 <code>~/.madecoding/bin</code>。打开新终端后运行 <code>madecoding</code>。
+      换目录用 <code>MADECODING_INSTALL_DIR</code>，装指定版本用 <code>--version &lt;tag&gt;</code>。
     </p>
-    <pre>uamgo                  <span class="c"># 选择终端界面或网页界面</span>
-uamgo tui              <span class="c"># 直接进终端界面</span>
-uamgo web              <span class="c"># 直接开网页界面</span>
-uamgo "修复这个测试"     <span class="c"># 带上任务直接开始</span></pre>
+    <pre>madecoding                  <span class="c"># 选择终端界面或网页界面</span>
+madecoding tui              <span class="c"># 直接进终端界面</span>
+madecoding web              <span class="c"># 直接开网页界面</span>
+madecoding "修复这个测试"     <span class="c"># 带上任务直接开始</span></pre>
+  </section>
+
+  <section id="deploy">
+    <h2>模型部署</h2>
+    <p class="hint" style="margin-top:0">
+      按小时购买独立服务器。每笔购买不可退款，未使用时长不退，仅在服务器在线期间可用。
+      开通后给你的是我们的 API 地址和密钥，不是源站。
+    </p>
+    <p class="hint">价格：group5 ¥50/小时，group6 ¥25/小时。可买 1 到 168 小时，下单几小时就开几小时。</p>
+    <form id="rental" class="rental">
+      <label>
+        <span>邮箱</span>
+        <input id="rental-email" type="email" autocomplete="username" required>
+      </label>
+      <label>
+        <span>密码</span>
+        <input id="rental-password" type="password" autocomplete="current-password" required>
+      </label>
+      <div class="rental-actions">
+        <button type="button" id="rental-login">登录</button>
+        <button type="button" id="rental-register">注册</button>
+      </div>
+      <label>
+        <span>套餐</span>
+        <select id="rental-plan" disabled></select>
+      </label>
+      <label>
+        <span>小时</span>
+        <input id="rental-hours" type="number" min="1" max="168" value="1" disabled>
+      </label>
+      <button type="submit" id="rental-buy" disabled>支付并开通</button>
+      <p id="rental-status" class="hint" role="status"></p>
+      <dl id="rental-issued" hidden></dl>
+    </form>
   </section>
 
   <section id="config">
     <h2>配置模型</h2>
-    <p class="hint" style="margin-top:0">两套界面读同一份 <code>~/.uamgo/config.toml</code>，只需配置一次。</p>
-    <pre>[model_providers.uamgo]
-base_url = "https://你的网关/v1"
-env_key = "UAMGO_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span>
-
-[model_providers.uamgo.extra_headers]
-"x-tenant" = "acme"</pre>
+    <p class="hint" style="margin-top:0">两套界面读同一份 <code>~/.madecoding/config.toml</code>，只需配置一次。密钥在 <a href="https://madeapi.com/keys">madeapi.com/keys</a>。</p>
+    <pre>[model_providers.madecoding]
+base_url = "https://madeapi.com/v1"
+env_key = "MADECODING_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span></pre>
   </section>
 
 </main>
 
 <footer class="wrap">
   <a href="/terms">用户协议</a>
-  <span class="spacer">© 2026 Uamgo</span>
+  <a href="#deploy">模型部署</a>
+  <span class="spacer">© 2026 madecoding</span>
 </footer>
 
 <script>
-  // Progressive: the command stays selectable if the clipboard is unavailable.
   for (const button of document.querySelectorAll('.copy')) {
     button.addEventListener('click', async () => {
       const source = document.querySelector(button.dataset.copy)
@@ -104,6 +136,7 @@ env_key = "UAMGO_API_KEY"      <span class="c"># 只记变量名，密钥不写�
     })
   }
 </script>
+<script src="/rental.js" type="module"></script>
 
 </body>
 </html>
