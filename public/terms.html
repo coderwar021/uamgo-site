@@ -9,22 +9,24 @@
 </head>
 <body>
 
-<header>
+<header class="site-header">
   <div class="wrap">
     <a class="brand" href="/">
-      <img src="/favicon.svg" alt="">
+      <span class="mark" aria-hidden="true"></span>
       madecoding
     </a>
     <nav>
-      <a href="/#install">安装</a>
-      <a href="/#deploy">模型部署</a>
-      <a href="/#config">配置</a>
-      <a href="/terms">用户协议</a>
+      <a href="/">首页</a>
+      <a href="/install">安装</a>
+      <a href="/deploy">模型部署</a>
+      <a href="/config">配置</a>
+      <a href="/terms" aria-current="page">协议</a>
     </nav>
   </div>
 </header>
 
-<main class="wrap prose">
+<main class="wrap page">
+  <p class="kicker">Terms</p>
   <h1>用户协议</h1>
 
   <p class="notice">
@@ -57,7 +59,7 @@
 </main>
 
 <footer class="wrap">
-  <a href="/">返回首页</a>
+  <a href="/">首页</a>
   <span class="spacer">© 2026 madecoding</span>
 </footer>
 

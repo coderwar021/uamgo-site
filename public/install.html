@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>安装 — madecoding</title>
+<meta name="description" content="一条命令安装 madecoding 终端界面与网页界面。">
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <span class="mark" aria-hidden="true"></span>
+      madecoding
+    </a>
+    <nav>
+      <a href="/">首页</a>
+      <a href="/install" aria-current="page">安装</a>
+      <a href="/deploy">模型部署</a>
+      <a href="/config">配置</a>
+      <a href="/terms">协议</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap page">
+  <p class="kicker">Install</p>
+  <h1>一条命令，两套界面。</h1>
+  <p>支持 macOS 与 Linux 的 x86_64 和 arm64。程序装在 <code>~/.madecoding/bin</code>。打开新终端后运行 <code>madecoding</code>。</p>
+
+  <div class="install" style="margin-top:2rem;max-width:100%">
+    <span class="prompt">$</span>
+    <code id="cmd">curl -fsSL https://madecoding.com/install.sh | sh</code>
+    <button class="copy" type="button" data-copy="#cmd">复制</button>
+  </div>
+  <p class="hint">换目录用 <code>MADECODING_INSTALL_DIR</code>，装指定版本用 <code>--version &lt;tag&gt;</code>。</p>
+
+  <pre>madecoding                  <span class="c"># 选择终端界面或网页界面</span>
+madecoding tui              <span class="c"># 直接进终端界面</span>
+madecoding web              <span class="c"># 直接开网页界面</span>
+madecoding "修复这个测试"     <span class="c"># 带上任务直接开始</span></pre>
+
+  <p>密钥和模型在网页界面的设置里配置，终端不挡登录。下一步看 <a href="/config">配置</a>，或去 <a href="/deploy">购买独立服务器</a>。</p>
+</main>
+
+<footer class="wrap">
+  <a href="/">首页</a>
+  <a href="/config">配置</a>
+  <span class="spacer">© 2026 madecoding</span>
+</footer>
+
+<script src="/site.js"></script>
+</body>
+</html>

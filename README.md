@@ -1,16 +1,16 @@
-# uamgo.com
+# madecoding.com
 
-The landing page and the terms of use. Two static pages and a small server,
-nothing else: the product is installed from npm, so the site distributes
-nothing.
+Landing pages for madecoding. Railway serves this repository as-is. `PORT` comes from the platform. `madecoding.com/install.sh` redirects to the latest GitHub release asset.
 
-Railway serves this repository as-is. There is no root directory to set and no
-environment to configure; `PORT` comes from the platform.
-
-| Path | Served as |
+| Path | File |
 |---|---|
-| `public/index.html` | `/` |
-| `public/terms.html` | `/terms` |
+| `/` | `public/index.html` |
+| `/install` | `public/install.html` |
+| `/deploy` | `public/deploy.html` |
+| `/config` | `public/config.html` |
+| `/terms` | `public/terms.html` |
+
+The header brand and the 首页 link always go to `/`. Each service is its own document so a hash on `/` cannot trap the browser on the same path.
 
 ## Local check
 

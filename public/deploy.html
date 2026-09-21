@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型部署 — madecoding</title>
+<meta name="description" content="按小时购买独立模型服务器。不可退款，开通时长与下单小时数相同。">
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <span class="mark" aria-hidden="true"></span>
+      madecoding
+    </a>
+    <nav>
+      <a href="/">首页</a>
+      <a href="/install">安装</a>
+      <a href="/deploy" aria-current="page">模型部署</a>
+      <a href="/config">配置</a>
+      <a href="/terms">协议</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap page">
+  <p class="kicker">GPU hours</p>
+  <h1>按小时租一台。<br>只给你我们的密钥。</h1>
+  <p>
+    每笔购买不可退款，未使用时长不退，仅在服务器在线期间可用。
+    可买 1 到 168 小时，下单几小时就开几小时。开通后签发我们的 API 地址和密钥，不是源站。
+  </p>
+  <p>价格：group5 ¥50/小时，group6 ¥25/小时。</p>
+
+  <form id="rental" class="rental">
+    <label>
+      <span>邮箱</span>
+      <input id="rental-email" type="email" autocomplete="username" required>
+    </label>
+    <label>
+      <span>密码</span>
+      <input id="rental-password" type="password" autocomplete="current-password" required>
+    </label>
+    <div class="rental-actions">
+      <button type="button" id="rental-login">登录</button>
+      <button type="button" id="rental-register">注册</button>
+    </div>
+    <label>
+      <span>套餐</span>
+      <select id="rental-plan" disabled></select>
+    </label>
+    <label>
+      <span>小时</span>
+      <input id="rental-hours" type="number" min="1" max="168" value="1" disabled>
+    </label>
+    <button type="submit" id="rental-buy" disabled>支付并开通</button>
+    <p id="rental-status" class="hint" role="status"></p>
+    <dl id="rental-issued" hidden></dl>
+  </form>
+</main>
+
+<footer class="wrap">
+  <a href="/">首页</a>
+  <a href="/config">配置</a>
+  <a href="/terms">用户协议</a>
+  <span class="spacer">© 2026 madecoding</span>
+</footer>
+
+<script src="/rental.js" type="module"></script>
+</body>
+</html>

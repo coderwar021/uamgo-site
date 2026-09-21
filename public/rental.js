@@ -46,13 +46,23 @@ async function loadPlans() {
 
 async function auth(path) {
   setStatus('')
-  const response = await fetch(`${RENTAL}${path}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: email.value, password: password.value }),
-  })
+  let response
+  try {
+    response = await fetch(`${RENTAL}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value }),
+    })
+  } catch {
+    setStatus(path === '/auth/register'
+      ? '注册失败，邮箱可能已存在，或租赁服务未启动（rental.madecoding.com）。'
+      : '登录失败。请检查邮箱密码，或确认租赁服务已启动。')
+    return
+  }
   if (!response.ok) {
-    setStatus(path === '/auth/register' ? '注册失败' : '登录失败')
+    setStatus(path === '/auth/register'
+      ? '注册失败，邮箱可能已存在，或租赁服务未启动（rental.madecoding.com）。'
+      : '登录失败。请检查邮箱密码，或确认租赁服务已启动。')
     return
   }
   const body = await response.json()
@@ -64,7 +74,7 @@ async function auth(path) {
   plan.disabled = false
   hours.disabled = false
   buy.disabled = false
-  setStatus('已登录，选择套餐和小时数后支付。小时数与开通时长相同。')
+  setStatus(`已登录：${email.value}。选择套餐和小时数后支付。小时数与开通时长相同。`)
 }
 
 async function pollOrder() {

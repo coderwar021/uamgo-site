@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配置 — madecoding</title>
+<meta name="description" content="终端与网页共用 ~/.madecoding/config.toml。密钥在 madeapi.com/keys。">
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <span class="mark" aria-hidden="true"></span>
+      madecoding
+    </a>
+    <nav>
+      <a href="/">首页</a>
+      <a href="/install">安装</a>
+      <a href="/deploy">模型部署</a>
+      <a href="/config" aria-current="page">配置</a>
+      <a href="/terms">协议</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap page">
+  <p class="kicker">Config</p>
+  <h1>配一次，终端和网页一起用。</h1>
+  <p>
+    两套界面读同一份 <code>~/.madecoding/config.toml</code>。密钥到
+    <a href="https://madeapi.com/keys">madeapi.com/keys</a> 申请，
+    也可以在网页界面的设置 → 模型里粘贴。
+  </p>
+
+  <pre>[model_providers.madecoding]
+base_url = "https://madeapi.com/v1"
+env_key = "MADECODING_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span></pre>
+
+  <p>模型目录默认是空的。在网页设置里自己添加模型 ID，或向提供方拉取。需要独立 GPU 时去 <a href="/deploy">模型部署</a>。</p>
+</main>
+
+<footer class="wrap">
+  <a href="/">首页</a>
+  <a href="/install">安装</a>
+  <span class="spacer">© 2026 madecoding</span>
+</footer>
+</body>
+</html>
