@@ -9,8 +9,14 @@ Landing pages for madecoding. Railway serves this repository as-is. `PORT` comes
 | `/deploy` | `public/deploy.html` |
 | `/config` | `public/config.html` |
 | `/terms` | `public/terms.html` |
+| `/auth/register` `POST` | JSON `{ email, password }` — 密码至少 8 位，写入 `data/store.json` 并设置 `session` cookie |
+| `/auth/login` `POST` | same |
+| `/auth/me` `GET` | `{ email }` or `{ email: null }` |
+| `/auth/logout` `POST` | clears cookie |
 
-The header brand and the 首页 link always go to `/`. Each service is its own document so a hash on `/` cannot trap the browser on the same path.
+The header brand and the 首页 link always go to `/`. Login and register live in the top-right control on every page. `/deploy` only places an order.
+
+Account records persist in `DATABASE_PATH` (default `data/store.json`). Attach a Railway volume there so redeploys keep users.
 
 ## Local check
 

@@ -5,6 +5,7 @@
   "type": "module",
   "description": "Static site for madecoding.com: terms of use, installer, and GPU-server purchase.",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
   }
 }

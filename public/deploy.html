@@ -33,21 +33,10 @@
     每笔购买不可退款，未使用时长不退，仅在服务器在线期间可用。
     可买 1 到 168 小时，下单几小时就开几小时。开通后签发我们的 API 地址和密钥，不是源站。
   </p>
-  <p>价格：group5 ¥50/小时，group6 ¥25/小时。</p>
+  <p>价格：group5 ¥50/小时，group6 ¥25/小时。账号在右上角登录或注册，本页只下单。</p>
 
   <form id="rental" class="rental">
-    <label>
-      <span>邮箱</span>
-      <input id="rental-email" type="email" autocomplete="username" required>
-    </label>
-    <label>
-      <span>密码</span>
-      <input id="rental-password" type="password" autocomplete="current-password" required>
-    </label>
-    <div class="rental-actions">
-      <button type="button" id="rental-login">登录</button>
-      <button type="button" id="rental-register">注册</button>
-    </div>
+    <p id="rental-need-login" class="notice">请先点右上角登录或注册，然后回到这里选择套餐。</p>
     <label>
       <span>套餐</span>
       <select id="rental-plan" disabled></select>
@@ -69,6 +58,7 @@
   <span class="spacer">© 2026 madecoding</span>
 </footer>
 
+<script src="/site.js"></script>
 <script src="/rental.js" type="module"></script>
 </body>
 </html>

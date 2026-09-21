@@ -106,6 +106,87 @@ nav a[aria-current='page'] {
   background: var(--lime-ink);
   color: var(--lime);
 }
+.account-open {
+  margin-left: 0.45rem;
+  flex: none;
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  background: var(--lime-ink);
+  color: var(--lime);
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.account-dialog {
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 1.4rem 1.35rem 1.2rem;
+  border: 2px solid var(--lime);
+  background: var(--ink);
+  color: var(--paper);
+}
+.account-dialog::backdrop { background: rgb(8 9 7 / 0.72); }
+.account-form { display: grid; gap: 0.85rem; }
+.account-form h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+.account-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.account-form input {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  color: var(--paper);
+  font: 0.95rem/1.4 var(--mono);
+}
+.account-status { min-height: 1.3em; margin: 0; color: var(--lime); font-size: 0.95rem; }
+.account-form .rental-actions button {
+  padding: 0.55rem 0.95rem;
+  border: 0;
+  background: var(--lime);
+  color: var(--lime-ink);
+  font-family: var(--display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.account-form .rental-actions button[data-auth='register'] {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid var(--line);
+}
+.account-close {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mute);
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
 
 .hero {
   display: grid;
