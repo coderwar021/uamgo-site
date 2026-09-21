@@ -18,6 +18,8 @@ The header brand and the 首页 link always go to `/`. Login and register live i
 
 Account records persist in `DATABASE_PATH` (default `data/store.json`). Attach a Railway volume there so redeploys keep users.
 
+Checkout stays on this host until Waffo is configured. Set `WAFFO_STORE_SLUG` and `WAFFO_PRODUCT_ID` (or `WAFFO_PRODUCT_GROUP5` / `WAFFO_PRODUCT_GROUP6`). Optional: `WAFFO_ENVIRONMENT` (`test` or `prod`, default `prod`), `WAFFO_CURRENCY` (default `CNY`). Without those variables, pay does not open a dead URL.
+
 ## Local check
 
 ```sh

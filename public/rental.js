@@ -111,12 +111,12 @@ form?.addEventListener('submit', (event) => {
       return
     }
     orderId = typeof body.order_id === 'string' ? body.order_id : ''
-    if (typeof body.checkout === 'string') {
-      setStatus(`打开结账链接完成支付：${body.checkout}`)
-      window.open(body.checkout, '_blank', 'noopener')
-    } else {
-      setStatus('已下单，等待支付与开通…')
+    if (typeof body.checkout === 'string' && body.checkout.startsWith('https://')) {
+      setStatus('正在打开收银台…')
+      window.location.assign(body.checkout)
+      return
     }
+    setStatus('订单已记下，支付通道未返回收银台。')
   })()
 })
 

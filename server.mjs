@@ -87,6 +87,56 @@ function cookieHeaders(request, token, clear = false) {
   }
 }
 
+function paymentsReady() {
+  const slug = process.env.WAFFO_STORE_SLUG ?? ''
+  const product = process.env.WAFFO_PRODUCT_ID
+    ?? process.env.WAFFO_PRODUCT_GROUP5
+    ?? process.env.WAFFO_PRODUCT_GROUP6
+    ?? ''
+  return slug.length > 0 && product.length > 0
+}
+
+function productForPlan(planId) {
+  const named = process.env[`WAFFO_PRODUCT_${planId.toUpperCase()}`]
+  if (typeof named === 'string' && named.length > 0) return named
+  return process.env.WAFFO_PRODUCT_ID ?? ''
+}
+
+/**
+ * Ask Waffo for a hosted checkout URL. Missing env must not invent a dead link.
+ * @param order stored order
+ * @param email buyer email
+ * @returns checkout URL or undefined
+ */
+async function createWaffoCheckout(order, email) {
+  const slug = process.env.WAFFO_STORE_SLUG ?? ''
+  const productId = productForPlan(order.plan_id)
+  if (slug.length === 0 || productId.length === 0) return undefined
+  const response = await fetch('https://api.waffo.ai/v1/actions/checkout/create-session', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'X-Store-Slug': slug,
+      'X-Environment': process.env.WAFFO_ENVIRONMENT ?? 'prod',
+    },
+    body: JSON.stringify({
+      productId,
+      productType: 'onetime',
+      currency: process.env.WAFFO_CURRENCY ?? 'CNY',
+      buyerEmail: email,
+      metadata: {
+        order_id: order.id,
+        plan_id: order.plan_id,
+        hours: String(order.hours),
+      },
+      successUrl: `https://madecoding.com/deploy?order=${order.id}`,
+    }),
+  })
+  const payload = await response.json().catch(() => ({}))
+  const url = payload?.data?.checkoutUrl
+  return typeof url === 'string' && url.startsWith('https://') ? url : undefined
+}
+
 const PLANS = [
   { id: 'group5', name: 'Qwen3.6-27B 4-bit', price_cny_per_hour: 50 },
   { id: 'group6', name: 'Gemma 4 E2B IT', price_cny_per_hour: 25 },
@@ -175,11 +225,18 @@ async function handleApi(request, response) {
     return true
   }
 
-  if (method === 'POST' && url.pathname === '/orders') {
+    if (method === 'POST' && url.pathname === '/orders') {
     const store = await loadStore(DB)
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
       sendJson(response, 401, { error: 'auth', message: '请先点右上角登录。' })
+      return true
+    }
+    if (!paymentsReady()) {
+      sendJson(response, 503, {
+        error: 'payments_unconfigured',
+        message: '支付未开通：Railway 还没有配置 WAFFO_STORE_SLUG 和 WAFFO_PRODUCT_ID，不会跳到空页面。',
+      })
       return true
     }
     let body
@@ -206,8 +263,21 @@ async function handleApi(request, response) {
       plan_id: plan.id,
       hours,
       status: 'pending_payment',
-      checkout: `https://pancake.waffo.ai/checkout?order=${id}`,
     }
+    let checkout
+    try {
+      checkout = await createWaffoCheckout(order, user.email)
+    } catch {
+      checkout = undefined
+    }
+    if (checkout === undefined) {
+      sendJson(response, 503, {
+        error: 'checkout',
+        message: '支付接口没有返回收银台地址。检查 WAFFO_STORE_SLUG、商品 ID 和环境（test/prod）。',
+      })
+      return true
+    }
+    order.checkout = checkout
     store.orders.push(order)
     await saveStore(DB, store)
     sendJson(response, 201, publicOrder(order))
