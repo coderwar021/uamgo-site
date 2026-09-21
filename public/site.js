@@ -1,17 +1,40 @@
+function addRipple(event) {
+  const button = event.currentTarget
+  const box = button.getBoundingClientRect()
+  const ripple = document.createElement('span')
+  ripple.className = 'ripple'
+  const size = 20
+  ripple.style.width = ripple.style.height = `${size}px`
+  ripple.style.left = `${event.clientX - box.left - size / 2}px`
+  ripple.style.top = `${event.clientY - box.top - size / 2}px`
+  button.append(ripple)
+  setTimeout(() => ripple.remove(), 600)
+}
+
 for (const button of document.querySelectorAll('.copy')) {
-  button.addEventListener('click', async () => {
+  button.addEventListener('click', (event) => {
+    addRipple(event)
     const source = document.querySelector(button.dataset.copy)
     if (source === null) return
-    try {
-      await navigator.clipboard.writeText(source.textContent.trim())
-      const previous = button.textContent
-      button.textContent = '已复制'
-      setTimeout(() => { button.textContent = previous }, 1600)
-    } catch {
-      getSelection()?.selectAllChildren(source)
-    }
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(source.textContent.trim())
+        const previous = button.textContent
+        button.textContent = '已复制'
+        setTimeout(() => { button.textContent = previous }, 1600)
+      } catch {
+        getSelection()?.selectAllChildren(source)
+      }
+    })()
   })
 }
+
+const reveal = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (entry.isIntersecting) entry.target.classList.add('in')
+  }
+}, { threshold: 0.18 })
+for (const node of document.querySelectorAll('.scroll-reveal')) reveal.observe(node)
 
 const wrap = document.querySelector('.site-header .wrap')
 if (wrap !== null) {
@@ -100,6 +123,9 @@ if (wrap !== null) {
       const body = await response.json().catch(() => ({}))
       if (!response.ok) {
         status.textContent = typeof body.message === 'string' ? body.message : '登录失败。'
+        form.classList.remove('shake')
+        void form.offsetWidth
+        form.classList.add('shake')
         return
       }
       currentEmail = typeof body.email === 'string' ? body.email : email
