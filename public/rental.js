@@ -113,7 +113,7 @@ form?.addEventListener('submit', (event) => {
     orderId = typeof body.order_id === 'string' ? body.order_id : ''
     if (typeof body.checkout === 'string' && body.checkout.startsWith('https://')) {
       setStatus('正在打开收银台…')
-      window.location.assign(body.checkout)
+      window.open(body.checkout, '_blank', 'noopener,noreferrer')
       return
     }
     setStatus('订单已记下，支付通道未返回收银台。')

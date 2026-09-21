@@ -18,9 +18,15 @@ export async function loadStore(path) {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
       orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+      waffo_products: parsed.waffo_products !== null
+        && typeof parsed.waffo_products === 'object'
+        && !Array.isArray(parsed.waffo_products)
+        ? parsed.waffo_products
+        : {},
+      webhook_ids: Array.isArray(parsed.webhook_ids) ? parsed.webhook_ids : [],
     }
   } catch {
-    return { users: [], sessions: [], orders: [] }
+    return { users: [], sessions: [], orders: [], waffo_products: {}, webhook_ids: [] }
   }
 }
 

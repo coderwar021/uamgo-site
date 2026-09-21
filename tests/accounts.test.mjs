@@ -63,6 +63,12 @@ test('http register login me logout', async () => {
       body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
     })
     assert.equal(login.status, 200)
+    const webhook = await fetch(`${origin}/webhooks/waffo`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    })
+    assert.equal(webhook.status, 401)
   } finally {
     server.close()
     await rm(dir, { recursive: true })

@@ -1,125 +1,181 @@
-import { createHash, createSign } from 'node:crypto'
+import {
+  TaxCategory,
+  WaffoPancake,
+  WaffoPancakeError,
+  WebhookEventType,
+  verifyWebhook,
+} from '@waffo/pancake-ts'
 
-const CHECKOUT_PATH = '/v1/actions/checkout/create-session'
-const CHECKOUT_URL = `https://api.waffo.ai${CHECKOUT_PATH}`
+/** Dashboard → API 与开发. Not a secret; override with WAFFO_MERCHANT_ID. */
+export const DEFAULT_MERCHANT_ID = 'MER_24yDgYwX9MaPwheVAyCk3d'
+
+/** Dashboard → 设置 → 店铺资料. Override with WAFFO_STORE_ID. */
+export const DEFAULT_STORE_ID = 'STO_1WjWkflwKXm3BodanakF0J'
+
+const SUCCESS_URL = 'https://madecoding.com/deploy'
+const WEBHOOK_URL = 'https://madecoding.com/webhooks/waffo'
 
 /**
- * PEM from Railway/env. Literal `\n` sequences become real newlines.
- * @param raw env value
- * @returns private key PEM
+ * RSA PEM from env. Supports PEM, escaped newlines, or Base64 of the whole PEM.
+ * @returns private key or empty
  */
-export function pemFromEnv(raw) {
-  const key = raw.trim().replace(/\\n/g, '\n')
-  if (key.includes('BEGIN')) return key
-  return `-----BEGIN PRIVATE KEY-----\n${key}\n-----END PRIVATE KEY-----`
+export function privateKeyFromEnv() {
+  const b64 = process.env.WAFFO_PRIVATE_KEY_BASE64 ?? ''
+  if (b64.length > 0) {
+    return Buffer.from(b64, 'base64').toString('utf8')
+  }
+  return (process.env.WAFFO_PRIVATE_KEY ?? process.env.WAFFO_API_KEY ?? '').trim()
 }
 
 /**
- * SHA-256 of the exact JSON body, Base64.
- * @param bodyJson exact POST body
- * @returns digest
+ * @returns Merchant ID
  */
-export function bodySha256Base64(bodyJson) {
-  return createHash('sha256').update(bodyJson, 'utf8').digest('base64')
+export function merchantId() {
+  const value = process.env.WAFFO_MERCHANT_ID ?? ''
+  return value.length > 0 ? value : DEFAULT_MERCHANT_ID
 }
 
 /**
- * RSA-SHA256 PKCS1v15 signature, Base64, of METHOD\\nPATH\\nts\\nbodyHash.
- * @param method HTTP method
- * @param path path
- * @param timestamp unix seconds
- * @param bodyJson exact JSON string
- * @param privateKeyPem PEM
- * @returns Base64 signature
+ * @returns Store ID
  */
-export function signWaffoRequest(method, path, timestamp, bodyJson, privateKeyPem) {
-  const canonical = `${method}\n${path}\n${timestamp}\n${bodySha256Base64(bodyJson)}`
-  const signer = createSign('sha256')
-  signer.update(canonical, 'utf8')
-  signer.end()
-  return signer.sign(pemFromEnv(privateKeyPem), 'base64')
+export function storeId() {
+  const value = process.env.WAFFO_STORE_ID ?? ''
+  return value.length > 0 ? value : DEFAULT_STORE_ID
 }
 
 /**
- * Merchant id plus downloaded RSA private key (Waffo API Key auth).
- * @returns whether checkout can be signed
+ * SDK client. Private key stays in env; the SDK signs every request.
+ * @returns Waffo Pancake client
+ */
+export function pancakeClient() {
+  return new WaffoPancake({
+    merchantId: merchantId(),
+    privateKey: privateKeyFromEnv(),
+  })
+}
+
+/**
+ * Merchant API Key is configured when the RSA private key is present.
+ * @returns whether checkout can run
  */
 export function paymentsReady() {
-  const merchant = process.env.WAFFO_MERCHANT_ID ?? ''
-  const key = process.env.WAFFO_PRIVATE_KEY ?? process.env.WAFFO_API_KEY ?? ''
-  const product = process.env.WAFFO_PRODUCT_ID
-    ?? process.env.WAFFO_PRODUCT_GROUP5
-    ?? process.env.WAFFO_PRODUCT_GROUP6
-    ?? ''
-  return merchant.length > 0 && key.length > 0 && product.length > 0
+  return privateKeyFromEnv().length > 0
 }
 
 /**
  * @param planId group5 | group6
- * @returns PROD_ id
+ * @returns env product id or empty
  */
-export function productForPlan(planId) {
+export function productIdFromEnv(planId) {
   const named = process.env[`WAFFO_PRODUCT_${planId.toUpperCase()}`]
   if (typeof named === 'string' && named.length > 0) return named
   return process.env.WAFFO_PRODUCT_ID ?? ''
 }
 
 /**
- * Create a Waffo checkout session with API Key headers (not Store Slug).
+ * Create a one-time GPU-hour product on the existing store, then publish to prod.
+ * @param plan catalog row
+ * @returns product id
+ */
+export async function ensureOnetimeProduct(plan) {
+  const client = pancakeClient()
+  const { product } = await client.onetimeProducts.create({
+    storeId: storeId(),
+    name: plan.name,
+    description: `madecoding GPU 小时 · ${plan.name}`,
+    successUrl: SUCCESS_URL,
+    metadata: { plan_id: plan.id },
+    prices: {
+      CNY: {
+        amount: plan.price_cny_per_hour.toFixed(2),
+        taxCategory: TaxCategory.DigitalGoods,
+      },
+    },
+  })
+  try {
+    await client.onetimeProducts.publish({ id: product.id })
+  } catch (error) {
+    if (!(error instanceof WaffoPancakeError)) throw error
+  }
+  return product.id
+}
+
+/**
+ * Register the production HTTP webhook once. Duplicate URLs are ignored.
+ * @returns void
+ */
+export async function ensureHttpWebhook() {
+  const client = pancakeClient()
+  const url = process.env.WAFFO_WEBHOOK_URL ?? WEBHOOK_URL
+  try {
+    await client.webhooks.add({
+      storeId: storeId(),
+      channel: 'http',
+      url,
+      events: [WebhookEventType.OrderCompleted],
+      testMode: false,
+    })
+  } catch (error) {
+    if (!(error instanceof WaffoPancakeError)) throw error
+  }
+}
+
+/**
+ * Hosted checkout via @waffo/pancake-ts (no hand-rolled RSA).
  * @param order stored order
  * @param email buyer email
  * @param planHoursPriceCny price per hour
+ * @param productId PROD_ id
  * @returns checkout URL or Waffo error text
  */
-export async function createWaffoCheckout(order, email, planHoursPriceCny) {
-  const merchantId = process.env.WAFFO_MERCHANT_ID ?? ''
-  const privateKey = process.env.WAFFO_PRIVATE_KEY ?? process.env.WAFFO_API_KEY ?? ''
-  const productId = productForPlan(order.plan_id)
-  if (merchantId.length === 0 || privateKey.length === 0 || productId.length === 0) {
-    return { checkout: undefined, error: 'missing_credentials' }
+export async function createWaffoCheckout(order, email, planHoursPriceCny, productId) {
+  if (productId.length === 0) {
+    return { checkout: undefined, error: 'missing_product' }
   }
   const amount = (planHoursPriceCny * order.hours).toFixed(2)
-  const payload = {
-    productId,
-    currency: process.env.WAFFO_CURRENCY ?? 'CNY',
-    buyerEmail: email,
-    orderMerchantExternalId: order.id,
-    metadata: {
-      order_id: order.id,
-      plan_id: order.plan_id,
-      hours: String(order.hours),
-    },
-    priceSnapshot: {
-      amount,
-      taxIncluded: true,
-      taxCategory: process.env.WAFFO_TAX_CATEGORY ?? 'digital_goods',
-    },
-    successUrl: `https://madecoding.com/deploy?order=${order.id}`,
-    language: 'zh-Hans',
+  try {
+    const session = await pancakeClient().checkout.createSession({
+      productId,
+      currency: process.env.WAFFO_CURRENCY ?? 'CNY',
+      buyerEmail: email,
+      orderMerchantExternalId: order.id,
+      metadata: {
+        order_id: order.id,
+        plan_id: order.plan_id,
+        hours: String(order.hours),
+      },
+      priceSnapshot: {
+        amount,
+        taxCategory: TaxCategory.DigitalGoods,
+      },
+      successUrl: `${SUCCESS_URL}?order=${order.id}`,
+      language: 'zh-Hans',
+    })
+    const url = session.checkoutUrl
+    if (typeof url === 'string' && url.startsWith('https://')) {
+      return { checkout: url, error: undefined }
+    }
+    return { checkout: undefined, error: 'no_checkout_url' }
+  } catch (error) {
+    if (error instanceof WaffoPancakeError) {
+      const message = error.errors[0]?.message
+      return {
+        checkout: undefined,
+        error: typeof message === 'string' && message.length > 0
+          ? message
+          : `HTTP ${error.status}`,
+      }
+    }
+    throw error
   }
-  const bodyJson = JSON.stringify(payload)
-  const timestamp = String(Math.floor(Date.now() / 1000))
-  const signature = signWaffoRequest('POST', CHECKOUT_PATH, timestamp, bodyJson, privateKey)
-  const response = await fetch(CHECKOUT_URL, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'X-Merchant-Id': merchantId,
-      'X-Timestamp': timestamp,
-      'X-Signature': signature,
-    },
-    body: bodyJson,
-  })
-  const json = await response.json().catch(() => ({}))
-  const url = json?.data?.checkoutUrl
-  if (typeof url === 'string' && url.startsWith('https://')) {
-    return { checkout: url, error: undefined }
-  }
-  const message = json?.errors?.[0]?.message
-  return {
-    checkout: undefined,
-    error: typeof message === 'string' && message.length > 0
-      ? message
-      : `HTTP ${response.status}`,
-  }
+}
+
+/**
+ * Verify a Waffo webhook with embedded platform public keys (prod first).
+ * @param rawBody unparsed request body
+ * @param signatureHeader X-Waffo-Signature
+ * @returns parsed event
+ */
+export function verifyWaffoWebhook(rawBody, signatureHeader) {
+  return verifyWebhook(rawBody, signatureHeader, { environment: 'prod' })
 }

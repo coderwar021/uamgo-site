@@ -14,7 +14,14 @@ import {
   userForToken,
   validateCredentials,
 } from './accounts.mjs'
-import { createWaffoCheckout, paymentsReady } from './waffo.mjs'
+import {
+  createWaffoCheckout,
+  ensureHttpWebhook,
+  ensureOnetimeProduct,
+  paymentsReady,
+  productIdFromEnv,
+  verifyWaffoWebhook,
+} from './waffo.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
@@ -88,6 +95,32 @@ function cookieHeaders(request, token, clear = false) {
   }
 }
 
+/**
+ * @param request incoming HTTP request
+ * @returns raw body
+ */
+async function readRaw(request) {
+  const chunks = []
+  for await (const chunk of request) chunks.push(chunk)
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+/**
+ * Env product id, else cached PROD_ from a previous SDK create.
+ * @param store local account store
+ * @param plan catalog row
+ * @returns PROD_ id
+ */
+async function productIdForPlan(store, plan) {
+  const fromEnv = productIdFromEnv(plan.id)
+  if (fromEnv.length > 0) return fromEnv
+  const cached = store.waffo_products[plan.id]
+  if (typeof cached === 'string' && cached.startsWith('PROD_')) return cached
+  const created = await ensureOnetimeProduct(plan)
+  store.waffo_products[plan.id] = created
+  return created
+}
+
 const PLANS = [
   { id: 'group5', name: 'Qwen3.6-27B 4-bit', price_cny_per_hour: 50 },
   { id: 'group6', name: 'Gemma 4 E2B IT', price_cny_per_hour: 25 },
@@ -115,6 +148,32 @@ function publicOrder(order) {
 async function handleApi(request, response) {
   const url = new URL(request.url ?? '/', 'http://localhost')
   const method = request.method ?? 'GET'
+
+  if (method === 'POST' && url.pathname === '/webhooks/waffo') {
+    const raw = await readRaw(request)
+    const signature = request.headers['x-waffo-signature']
+    let event
+    try {
+      event = verifyWaffoWebhook(raw, typeof signature === 'string' ? signature : undefined)
+    } catch {
+      sendJson(response, 401, { error: 'signature' })
+      return true
+    }
+    const store = await loadStore(DB)
+    if (!store.webhook_ids.includes(event.id)) {
+      store.webhook_ids.push(event.id)
+      const external = event.data?.orderMerchantExternalId
+      const metaId = event.data?.orderMetadata?.order_id
+      const order = store.orders.find((row) => row.id === external || row.id === metaId)
+      if (order !== undefined && event.eventType === 'order.completed') {
+        order.status = 'paid'
+        order.waffo_order_id = event.data?.orderId
+      }
+      await saveStore(DB, store)
+    }
+    sendJson(response, 200, { ok: true })
+    return true
+  }
 
   if (method === 'GET' && url.pathname === '/auth/me') {
     const store = await loadStore(DB)
@@ -176,7 +235,7 @@ async function handleApi(request, response) {
     return true
   }
 
-    if (method === 'POST' && url.pathname === '/orders') {
+  if (method === 'POST' && url.pathname === '/orders') {
     const store = await loadStore(DB)
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
@@ -186,7 +245,7 @@ async function handleApi(request, response) {
     if (!paymentsReady()) {
       sendJson(response, 503, {
         error: 'payments_unconfigured',
-        message: '支付未开通：在 Railway 配置 WAFFO_MERCHANT_ID、WAFFO_PRIVATE_KEY（控制台下载的 RSA 私钥，也可写成 WAFFO_API_KEY）和 WAFFO_PRODUCT_ID（PROD_ 开头）。私钥创建时已绑定 test 或 prod，不要再填 Store Slug。',
+        message: '支付未开通：在 Railway 配置 WAFFO_PRIVATE_KEY（控制台 API 密钥下载的整段 RSA 私钥）。Merchant ID 和 Store ID 已写进代码。也可改用 WAFFO_PRIVATE_KEY_BASE64。',
       })
       return true
     }
@@ -215,14 +274,29 @@ async function handleApi(request, response) {
       hours,
       status: 'pending_payment',
     }
+    let productId
+    try {
+      productId = await productIdForPlan(store, plan)
+    } catch (error) {
+      sendJson(response, 503, {
+        error: 'product',
+        message: error instanceof Error ? `创建商品失败：${error.message}` : '创建商品失败',
+      })
+      return true
+    }
     let checkout
     let waffoError
     try {
-      const created = await createWaffoCheckout(order, user.email, plan.price_cny_per_hour)
+      const created = await createWaffoCheckout(
+        order,
+        user.email,
+        plan.price_cny_per_hour,
+        productId,
+      )
       checkout = created.checkout
       waffoError = created.error
     } catch (error) {
-      waffoError = error instanceof Error ? error.message : 'sign'
+      waffoError = error instanceof Error ? error.message : 'checkout'
     }
     if (checkout === undefined) {
       sendJson(response, 503, {
@@ -236,6 +310,7 @@ async function handleApi(request, response) {
     order.checkout = checkout
     store.orders.push(order)
     await saveStore(DB, store)
+    void ensureHttpWebhook().catch(() => undefined)
     sendJson(response, 201, publicOrder(order))
     return true
   }
