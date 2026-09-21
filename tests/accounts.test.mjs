@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -8,6 +9,7 @@ import {
   loginUser,
   normalizeEmail,
   registerUser,
+  sessionForEmail,
   validateCredentials,
   verifyPassword,
 } from '../accounts.mjs'
@@ -31,7 +33,44 @@ test('scrypt round trip', async () => {
   assert.equal(normalizeEmail('  X@Y.Z '), 'x@y.z')
 })
 
-test('http register login me logout', async () => {
+test('sessionForEmail reuses the same user', () => {
+  const store = { users: [], sessions: [], orders: [] }
+  const first = sessionForEmail(store, 'A@B.C')
+  const second = sessionForEmail(store, 'a@b.c')
+  assert.equal(first.email, 'a@b.c')
+  assert.equal(store.users.length, 1)
+  assert.equal(store.sessions.length, 2)
+  assert.notEqual(first.token, second.token)
+})
+
+test('http register login me logout via Aether OTP', async () => {
+  const mock = createServer((request, response) => {
+    const chunks = []
+    request.on('data', (chunk) => chunks.push(chunk))
+    request.on('end', () => {
+      const url = new URL(request.url ?? '/', 'http://aether.test')
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+      response.setHeader('content-type', 'application/json')
+      if (url.pathname === '/api/auth/send-otp') {
+        response.end(JSON.stringify({ ok: true }))
+        return
+      }
+      if (url.pathname === '/api/auth/register' || url.pathname === '/api/auth/login') {
+        if (body.code === '123456') {
+          response.end(JSON.stringify({ ok: true }))
+          return
+        }
+        response.statusCode = 401
+        response.end(JSON.stringify({ error: '账号或密码错误' }))
+        return
+      }
+      response.statusCode = 404
+      response.end('{}')
+    })
+  })
+  await new Promise((resolve) => mock.listen(0, '127.0.0.1', resolve))
+  const aetherPort = mock.address().port
+  process.env.AETHER_ORIGIN = `http://127.0.0.1:${aetherPort}`
   const dir = await mkdtemp(join(tmpdir(), 'madecoding-site-'))
   process.env.DATABASE_PATH = join(dir, 'store.json')
   process.env.PORT = '0'
@@ -40,10 +79,22 @@ test('http register login me logout', async () => {
   const { port } = server.address()
   const origin = `http://127.0.0.1:${port}`
   try {
+    const otp = await fetch(`${origin}/auth/otp`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'user@made.local', purpose: 'register' }),
+    })
+    assert.equal(otp.status, 200)
     const registered = await fetch(`${origin}/auth/register`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
+      body: JSON.stringify({
+        email: 'user@made.local',
+        password: 'long-enough',
+        confirmPassword: 'long-enough',
+        name: 'User',
+        code: '123456',
+      }),
     })
     assert.equal(registered.status, 201)
     const cookie = registered.headers.get('set-cookie')
@@ -60,7 +111,7 @@ test('http register login me logout', async () => {
     const login = await fetch(`${origin}/auth/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
+      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough', code: '123456' }),
     })
     assert.equal(login.status, 200)
     const webhook = await fetch(`${origin}/webhooks/waffo`, {
@@ -71,6 +122,7 @@ test('http register login me logout', async () => {
     assert.equal(webhook.status, 401)
   } finally {
     server.close()
+    mock.close()
     await rm(dir, { recursive: true })
   }
 })

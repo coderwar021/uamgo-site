@@ -48,10 +48,19 @@ if (wrap !== null) {
   dialog.className = 'account-dialog'
   dialog.innerHTML = `
     <form method="dialog" class="account-form">
-      <p class="kicker">Account</p>
+      <p class="kicker">Aether</p>
       <h2>登录或注册</h2>
+      <p>验证码由 <a href="https://mail.uamgo.com/" target="_blank" rel="noopener">mail.uamgo.com</a> 发到你的邮箱。</p>
+      <label><span>名称</span><input name="name" type="text" autocomplete="name" placeholder="注册时填写"></label>
       <label><span>邮箱</span><input name="email" type="email" autocomplete="username" required></label>
       <label><span>密码</span><input name="password" type="password" autocomplete="current-password" required minlength="8"></label>
+      <label><span>确认密码</span><input name="confirm" type="password" autocomplete="new-password" minlength="8" placeholder="注册时填写"></label>
+      <label class="otp-row"><span>验证码</span>
+        <span class="otp-fields">
+          <input name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required>
+          <button type="button" data-otp="1">发送验证码</button>
+        </span>
+      </label>
       <p class="account-status" role="status"></p>
       <div class="rental-actions">
         <button type="button" data-auth="login">登录</button>
@@ -99,12 +108,39 @@ if (wrap !== null) {
   form.addEventListener('click', (event) => {
     const target = event.target
     if (!(target instanceof HTMLButtonElement)) return
+    const data = new FormData(form)
+    const email = String(data.get('email') ?? '')
+    if (target.dataset.otp === '1') {
+      event.preventDefault()
+      status.textContent = '正在发送验证码…'
+      void (async () => {
+        let response
+        try {
+          response = await fetch('/auth/otp', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              email,
+              purpose: String(data.get('name') ?? '').trim().length > 0 ? 'register' : 'login',
+            }),
+          })
+        } catch {
+          status.textContent = '网络失败，请重试。'
+          return
+        }
+        const body = await response.json().catch(() => ({}))
+        status.textContent = typeof body.message === 'string' ? body.message : '发送失败。'
+      })()
+      return
+    }
     const action = target.dataset.auth
     if (action !== 'login' && action !== 'register') return
     event.preventDefault()
-    const data = new FormData(form)
-    const email = String(data.get('email') ?? '')
     const password = String(data.get('password') ?? '')
+    const confirm = String(data.get('confirm') ?? '')
+    const name = String(data.get('name') ?? '')
+    const code = String(data.get('code') ?? '')
     const path = action === 'register' ? '/auth/register' : '/auth/login'
     status.textContent = '正在提交…'
     void (async () => {
@@ -114,7 +150,13 @@ if (wrap !== null) {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({
+            email,
+            password,
+            confirmPassword: confirm.length > 0 ? confirm : password,
+            name,
+            code,
+          }),
         })
       } catch {
         status.textContent = '网络失败，请重试。'

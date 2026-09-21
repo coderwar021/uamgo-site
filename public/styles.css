@@ -118,7 +118,7 @@ nav a[aria-current='page']::after {
 .account-open:active { transform: scale(0.96) translateY(1px); }
 
 .account-dialog {
-  width: min(23rem, calc(100vw - 2rem));
+  width: min(26rem, calc(100vw - 2rem));
   padding: 1.5rem 1.4rem 1.25rem;
   border: 1px solid var(--line);
   background: var(--paper);
@@ -133,6 +133,8 @@ nav a[aria-current='page']::after {
   font-size: 1.7rem;
   font-weight: 400;
 }
+.account-form > p { margin: 0; font-size: 0.92rem; color: var(--mute); text-transform: none; letter-spacing: 0; }
+.account-form a { color: var(--ink); }
 .account-form label {
   display: grid;
   gap: 0.3rem;
@@ -148,6 +150,17 @@ nav a[aria-current='page']::after {
   background: var(--bg);
   color: var(--ink);
   font: 0.95rem/1.4 var(--mono);
+}
+.account-form .otp-fields { display: flex; gap: 0.45rem; }
+.account-form .otp-fields input { flex: 1; min-width: 0; }
+.account-form .otp-fields button {
+  flex: 0 0 auto;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.82rem;
+  cursor: pointer;
 }
 .account-status { min-height: 1.3em; margin: 0; color: var(--accent); font-size: 0.92rem; }
 .account-form .rental-actions { display: flex; gap: 0.5rem; }

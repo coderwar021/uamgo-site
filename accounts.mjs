@@ -113,6 +113,23 @@ export async function loginUser(store, email, password) {
 }
 
 /**
+ * After Aether accepts the email code, open a local session.
+ * @param {object} store
+ * @param {string} email
+ */
+export function sessionForEmail(store, email) {
+  const address = normalizeEmail(email)
+  let user = store.users.find((row) => row.email === address)
+  if (user === undefined) {
+    user = { id: randomUUID(), email: address, aether: true }
+    store.users.push(user)
+  }
+  const token = randomBytes(24).toString('hex')
+  store.sessions.push({ token, user_id: user.id })
+  return { token, email: address }
+}
+
+/**
  * @param {object} store
  * @param {string} token
  */

@@ -6,14 +6,19 @@ import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   loadStore,
-  loginUser,
-  registerUser,
   saveStore,
   sessionCookie,
+  sessionForEmail,
   sessionFromCookie,
   userForToken,
   validateCredentials,
 } from './accounts.mjs'
+import {
+  aetherMessage,
+  loginAether,
+  registerAether,
+  sendAetherOtp,
+} from './aether.mjs'
 import {
   createWaffoCheckout,
   ensureHttpWebhook,
@@ -182,6 +187,38 @@ async function handleApi(request, response) {
     return true
   }
 
+  if (method === 'POST' && url.pathname === '/auth/otp') {
+    let body
+    try {
+      body = await readJson(request)
+    } catch {
+      sendJson(response, 400, { error: 'json' })
+      return true
+    }
+    const email = String(body.email ?? '')
+    const purpose = body.purpose === 'register' ? 'register' : 'login'
+    if (validateCredentials(email, 'long-enough') === 'email') {
+      sendJson(response, 400, { error: 'email', message: '请填写有效邮箱。' })
+      return true
+    }
+    const result = await sendAetherOtp(email, purpose)
+    if (!result.ok) {
+      sendJson(response, result.status === 503 ? 503 : 400, {
+        error: 'otp',
+        message: aetherMessage(result.json, '验证码发送失败。'),
+      })
+      return true
+    }
+    const hint = result.json?.devCode
+    sendJson(response, 200, {
+      ok: true,
+      message: typeof hint === 'string' && hint.length > 0
+        ? `开发模式验证码：${hint}`
+        : '验证码已发到邮箱（Aether / mail.uamgo.com）。',
+    })
+    return true
+  }
+
   if (method === 'POST' && (url.pathname === '/auth/register' || url.pathname === '/auth/login')) {
     let body
     try {
@@ -199,18 +236,33 @@ async function handleApi(request, response) {
       sendJson(response, 400, { error: 'password', message: '密码至少 8 位。' })
       return true
     }
+    const code = String(body.code ?? '').trim()
+    if (!/^\d{6}$/u.test(code)) {
+      sendJson(response, 400, { error: 'code', message: '请填写 6 位邮箱验证码。' })
+      return true
+    }
+    const aether = url.pathname === '/auth/register'
+      ? await registerAether({
+        email: body.email,
+        password: body.password,
+        confirmPassword: body.confirmPassword ?? body.password,
+        name: String(body.name ?? '').trim() || String(body.email).split('@')[0],
+        code,
+      })
+      : await loginAether({
+        email: body.email,
+        password: body.password,
+        code,
+      })
+    if (!aether.ok) {
+      sendJson(response, aether.status >= 400 && aether.status < 500 ? aether.status : 401, {
+        error: 'aether',
+        message: aetherMessage(aether.json, '登录失败。'),
+      })
+      return true
+    }
     const store = await loadStore(DB)
-    const result = url.pathname === '/auth/register'
-      ? await registerUser(store, body.email, body.password)
-      : await loginUser(store, body.email, body.password)
-    if (result.error === 'exists') {
-      sendJson(response, 409, { error: 'exists', message: '这个邮箱已经注册，请直接登录。' })
-      return true
-    }
-    if (result.error === 'credentials') {
-      sendJson(response, 401, { error: 'credentials', message: '邮箱或密码不对。' })
-      return true
-    }
+    const result = sessionForEmail(store, body.email)
     await saveStore(DB, store)
     sendJson(
       response,
