@@ -5,13 +5,18 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  assertProductionStoreKey,
   cookieValue,
+  csrfCookie,
+  csrfFromCookie,
+  csrfOk,
   loadStore,
   namedCookie,
   saveStore,
   sessionCookie,
   sessionForEmail,
   sessionFromCookie,
+  SESSION_AGE,
   userForToken,
 } from './accounts.mjs'
 import {
@@ -25,6 +30,16 @@ import {
   fetchUserinfo,
 } from './aether.mjs'
 import {
+  checkoutAllowed,
+  isUuid,
+  lockResponse,
+  originAllowed,
+  rateOk,
+  readLimited,
+  safeEqual,
+  sha256Hex,
+} from './security.mjs'
+import {
   createWaffoCheckout,
   ensureHttpWebhook,
   ensureOnetimeProduct,
@@ -36,7 +51,6 @@ import {
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
 const DB = process.env.DATABASE_PATH ?? resolve(fileURLToPath(new URL('./data/store.json', import.meta.url)))
-const SESSION_AGE = 60 * 60 * 24 * 30
 
 const TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -91,50 +105,58 @@ function sendJson(response, status, body, extraHeaders = {}) {
   response.end(payload)
 }
 
-async function readJson(request) {
-  const chunks = []
-  for await (const chunk of request) chunks.push(chunk)
-  const raw = Buffer.concat(chunks).toString('utf8')
-  if (raw.length === 0) return {}
-  return JSON.parse(raw)
-}
-
-function publicOrigin(request) {
-  const host = request.headers.host ?? 'madecoding.com'
-  const proto = isSecure(request) ? 'https' : 'http'
-  return `${proto}://${host}`
+function pkceName(request, name) {
+  return cookieValue(request.headers.cookie, `__Host-${name}`)
+    || cookieValue(request.headers.cookie, name)
 }
 
 function pkceSetCookies(request, pkce) {
   const secure = isSecure(request)
   return [
-    namedCookie('aether_state', pkce.state, secure, 600),
-    namedCookie('aether_verifier', pkce.verifier, secure, 600),
+    namedCookie('aether_state', pkce.state, secure, 600, { httpOnly: true, sameSite: 'Lax' }),
+    namedCookie('aether_verifier', pkce.verifier, secure, 600, { httpOnly: true, sameSite: 'Lax' }),
   ]
 }
 
 function pkceClearCookies(request) {
   const secure = isSecure(request)
   return [
-    namedCookie('aether_state', '', secure, 0),
-    namedCookie('aether_verifier', '', secure, 0),
+    namedCookie('aether_state', '', secure, 0, { httpOnly: true, sameSite: 'Lax' }),
+    namedCookie('aether_verifier', '', secure, 0, { httpOnly: true, sameSite: 'Lax' }),
   ]
 }
 
-function cookieHeaders(request, token, clear = false) {
-  return {
-    'set-cookie': sessionCookie(isSecure(request), clear ? '' : token, clear ? 0 : SESSION_AGE),
-  }
+function sessionCookies(request, token, csrf) {
+  const secure = isSecure(request)
+  return [
+    sessionCookie(secure, token, SESSION_AGE),
+    csrfCookie(secure, csrf, SESSION_AGE),
+  ]
 }
 
-/**
- * @param request incoming HTTP request
- * @returns raw body
- */
-async function readRaw(request) {
-  const chunks = []
-  for await (const chunk of request) chunks.push(chunk)
-  return Buffer.concat(chunks).toString('utf8')
+function clearSessionCookies(request) {
+  const secure = isSecure(request)
+  return [
+    sessionCookie(secure, '', 0),
+    csrfCookie(secure, '', 0),
+  ]
+}
+
+function requireCsrf(request, store) {
+  const token = sessionFromCookie(request.headers.cookie)
+  const csrf = request.headers['x-csrf-token']
+  const header = typeof csrf === 'string' ? csrf : csrfFromCookie(request.headers.cookie)
+  return originAllowed(request) && csrfOk(store, token, header)
+}
+
+function tooMany(response) {
+  sendJson(response, 429, { error: 'rate' }, { 'retry-after': '60' })
+}
+
+async function readJson(request) {
+  const raw = await readLimited(request)
+  if (raw.length === 0) return {}
+  return JSON.parse(raw)
 }
 
 /**
@@ -159,12 +181,13 @@ const PLANS = [
 ]
 
 function publicOrder(order) {
+  const checkout = checkoutAllowed(order.checkout) ? order.checkout : undefined
   return {
     order_id: order.id,
     plan_id: order.plan_id,
     hours: order.hours,
     status: order.status,
-    checkout: order.checkout,
+    checkout,
     base_url: order.base_url,
     key: order.key,
     model: order.model,
@@ -182,7 +205,20 @@ async function handleApi(request, response) {
   const method = request.method ?? 'GET'
 
   if (method === 'POST' && url.pathname === '/webhooks/waffo') {
-    const raw = await readRaw(request)
+    if (!rateOk(request, 'webhook')) {
+      tooMany(response)
+      return true
+    }
+    let raw
+    try {
+      raw = await readLimited(request)
+    } catch (error) {
+      if (error.code === 'payload_too_large') {
+        sendJson(response, 413, { error: 'payload' })
+        return true
+      }
+      throw error
+    }
     const signature = request.headers['x-waffo-signature']
     let event
     try {
@@ -197,7 +233,7 @@ async function handleApi(request, response) {
       const external = event.data?.orderMerchantExternalId
       const metaId = event.data?.orderMetadata?.order_id
       const order = store.orders.find((row) => row.id === external || row.id === metaId)
-      if (order !== undefined && event.eventType === 'order.completed') {
+      if (order !== undefined && event.eventType === 'order.completed' && order.status === 'pending_payment') {
         order.status = 'paid'
         order.waffo_order_id = event.data?.orderId
       }
@@ -215,14 +251,18 @@ async function handleApi(request, response) {
   }
 
   if (method === 'GET' && url.pathname === '/auth/aether') {
+    if (!rateOk(request, 'auth')) {
+      tooMany(response)
+      return true
+    }
     if (!aetherReady()) {
       sendJson(response, 503, {
         error: 'aether_unconfigured',
-        message: '登录未开通：在 Railway 配置 AETHER_CLIENT_ID（Aether 控制台里付费应用的 client_id）。回调地址填 https://madecoding.com/auth/callback。机密客户端再配 AETHER_CLIENT_SECRET。',
+        message: '登录未开通：在 Railway 配置 AETHER_CLIENT_ID。回调地址填 https://madecoding.com/auth/callback。',
       })
       return true
     }
-    const redirectUri = aetherRedirectUri(`${publicOrigin(request)}/auth/callback`)
+    const redirectUri = aetherRedirectUri()
     const pkce = createPkce()
     response.writeHead(302, {
       location: authorizeUrl(redirectUri, pkce),
@@ -234,6 +274,10 @@ async function handleApi(request, response) {
   }
 
   if (method === 'GET' && url.pathname === '/auth/callback') {
+    if (!rateOk(request, 'auth')) {
+      tooMany(response)
+      return true
+    }
     const error = url.searchParams.get('error')
     if (typeof error === 'string' && error.length > 0) {
       sendJson(response, 401, {
@@ -247,25 +291,25 @@ async function handleApi(request, response) {
     }
     const code = url.searchParams.get('code') ?? ''
     const state = url.searchParams.get('state') ?? ''
-    const expected = cookieValue(request.headers.cookie, 'aether_state')
-    const verifier = cookieValue(request.headers.cookie, 'aether_verifier')
-    if (code.length === 0 || state.length === 0 || state !== expected || verifier.length === 0) {
+    const expected = pkceName(request, 'aether_state')
+    const verifier = pkceName(request, 'aether_verifier')
+    if (code.length === 0 || state.length === 0 || expected.length === 0 || !safeEqual(state, expected) || verifier.length === 0) {
       sendJson(response, 400, { error: 'state', message: 'OAuth 回调无效，请重新登录。' })
       return true
     }
-    const redirectUri = aetherRedirectUri(`${publicOrigin(request)}/auth/callback`)
+    const redirectUri = aetherRedirectUri()
     let tokens
     try {
       tokens = await exchangeCode(code, redirectUri, verifier)
     } catch {
-      sendJson(response, 503, { error: 'token', message: '换 token 失败，邮箱服务暂时连不上。' })
+      sendJson(response, 503, { error: 'token', message: '换 token 失败。' })
       return true
     }
     const access = tokens.json?.access_token
     if (!tokens.ok || typeof access !== 'string') {
-      sendJson(response, tokens.status === 0 ? 503 : 401, {
+      sendJson(response, 401, {
         error: 'token',
-        message: aetherMessage(tokens.json, 'Aether 没有返回 access_token。检查 client_id / secret 和订阅。'),
+        message: aetherMessage(tokens.json, 'Aether 没有返回 access_token。'),
       })
       return true
     }
@@ -280,7 +324,7 @@ async function handleApi(request, response) {
     if (!profile.ok || email.length === 0) {
       sendJson(response, 401, {
         error: 'userinfo',
-        message: aetherMessage(profile.json, 'Aether 没有返回邮箱。scope 需要包含 email。'),
+        message: aetherMessage(profile.json, 'Aether 没有返回邮箱。'),
       })
       return true
     }
@@ -291,7 +335,7 @@ async function handleApi(request, response) {
       location: '/',
       'cache-control': 'no-store',
       'set-cookie': [
-        sessionCookie(isSecure(request), result.token, SESSION_AGE),
+        ...sessionCookies(request, result.token, result.csrf),
         ...pkceClearCookies(request),
       ],
     })
@@ -300,11 +344,20 @@ async function handleApi(request, response) {
   }
 
   if (method === 'POST' && url.pathname === '/auth/logout') {
+    if (!rateOk(request, 'auth')) {
+      tooMany(response)
+      return true
+    }
     const store = await loadStore(DB)
+    if (!requireCsrf(request, store)) {
+      sendJson(response, 403, { error: 'csrf' })
+      return true
+    }
     const token = sessionFromCookie(request.headers.cookie)
-    store.sessions = store.sessions.filter((row) => row.token !== token)
+    const digest = sha256Hex(token)
+    store.sessions = store.sessions.filter((row) => row.token_hash !== digest)
     await saveStore(DB, store)
-    sendJson(response, 200, { email: null }, cookieHeaders(request, '', true))
+    sendJson(response, 200, { email: null }, { 'set-cookie': clearSessionCookies(request) })
     return true
   }
 
@@ -314,7 +367,15 @@ async function handleApi(request, response) {
   }
 
   if (method === 'POST' && url.pathname === '/orders') {
+    if (!rateOk(request, 'order')) {
+      tooMany(response)
+      return true
+    }
     const store = await loadStore(DB)
+    if (!requireCsrf(request, store)) {
+      sendJson(response, 403, { error: 'csrf' })
+      return true
+    }
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
       sendJson(response, 401, { error: 'auth', message: '请先点右上角登录。' })
@@ -323,14 +384,18 @@ async function handleApi(request, response) {
     if (!paymentsReady()) {
       sendJson(response, 503, {
         error: 'payments_unconfigured',
-        message: '支付未开通：在 Railway 配置 WAFFO_PRIVATE_KEY（控制台 API 密钥下载的整段 RSA 私钥）。Merchant ID 和 Store ID 已写进代码。也可改用 WAFFO_PRIVATE_KEY_BASE64。',
+        message: '支付未开通：配置 WAFFO_PRIVATE_KEY。',
       })
       return true
     }
     let body
     try {
       body = await readJson(request)
-    } catch {
+    } catch (error) {
+      if (error.code === 'payload_too_large') {
+        sendJson(response, 413, { error: 'payload' })
+        return true
+      }
       sendJson(response, 400, { error: 'json' })
       return true
     }
@@ -355,11 +420,8 @@ async function handleApi(request, response) {
     let productId
     try {
       productId = await productIdForPlan(store, plan)
-    } catch (error) {
-      sendJson(response, 503, {
-        error: 'product',
-        message: error instanceof Error ? `创建商品失败：${error.message}` : '创建商品失败',
-      })
+    } catch {
+      sendJson(response, 503, { error: 'product', message: '创建商品失败。' })
       return true
     }
     let checkout
@@ -373,15 +435,13 @@ async function handleApi(request, response) {
       )
       checkout = created.checkout
       waffoError = created.error
-    } catch (error) {
-      waffoError = error instanceof Error ? error.message : 'checkout'
+    } catch {
+      waffoError = 'checkout'
     }
-    if (checkout === undefined) {
+    if (!checkoutAllowed(checkout)) {
       sendJson(response, 503, {
         error: 'checkout',
-        message: waffoError === undefined
-          ? '支付接口没有返回收银台地址。核对 Merchant ID、私钥是否对应同一把 key，以及商品 ID 是否为 PROD_。'
-          : `支付接口拒绝：${waffoError}`,
+        message: waffoError === undefined ? '支付接口没有返回合法收银台地址。' : `支付接口拒绝：${waffoError}`,
       })
       return true
     }
@@ -394,13 +454,17 @@ async function handleApi(request, response) {
   }
 
   if (method === 'GET' && url.pathname.startsWith('/orders/')) {
+    const id = url.pathname.slice('/orders/'.length)
+    if (!isUuid(id)) {
+      sendJson(response, 404, { error: 'order' })
+      return true
+    }
     const store = await loadStore(DB)
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
       sendJson(response, 401, { error: 'auth' })
       return true
     }
-    const id = url.pathname.slice('/orders/'.length)
     const order = store.orders.find((row) => row.id === id && row.user_id === user.id)
     if (order === undefined) {
       sendJson(response, 404, { error: 'order' })
@@ -414,6 +478,7 @@ async function handleApi(request, response) {
 }
 
 const server = createServer((request, response) => {
+  lockResponse(response)
   void (async () => {
     const handled = await handleApi(request, response)
     if (handled) return
@@ -441,16 +506,21 @@ const server = createServer((request, response) => {
     }
     createReadStream(found.path).pipe(response)
   })().catch((error) => {
-    if (!response.headersSent) sendJson(response, 500, { error: String(error) })
+    if (error?.code === 'payload_too_large') {
+      sendJson(response, 413, { error: 'payload' })
+      return
+    }
+    if (!response.headersSent) sendJson(response, 500, { error: 'internal' })
   })
 })
 
 const startedDirectly = process.argv[1] !== undefined
   && fileURLToPath(import.meta.url) === resolve(process.argv[1])
 if (startedDirectly) {
+  assertProductionStoreKey()
   server.listen(PORT, () => {
     process.stdout.write(`madecoding.com listening on :${PORT}\n`)
   })
 }
 
-export { server, handleApi }
+export { server, handleApi, assertProductionStoreKey }

@@ -5,6 +5,7 @@ import {
   WebhookEventType,
   verifyWebhook,
 } from '@waffo/pancake-ts'
+import { checkoutAllowed } from './security.mjs'
 
 /** Dashboard → API 与开发. Not a secret; override with WAFFO_MERCHANT_ID. */
 export const DEFAULT_MERCHANT_ID = 'MER_24yDgYwX9MaPwheVAyCk3d'
@@ -152,10 +153,10 @@ export async function createWaffoCheckout(order, email, planHoursPriceCny, produ
       language: 'zh-Hans',
     })
     const url = session.checkoutUrl
-    if (typeof url === 'string' && url.startsWith('https://')) {
+    if (checkoutAllowed(url)) {
       return { checkout: url, error: undefined }
     }
-    return { checkout: undefined, error: 'no_checkout_url' }
+    return { checkout: undefined, error: typeof url === 'string' ? 'checkout_host' : 'no_checkout_url' }
   } catch (error) {
     if (error instanceof WaffoPancakeError) {
       const message = error.errors[0]?.message

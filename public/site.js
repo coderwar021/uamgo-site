@@ -46,6 +46,14 @@ if (wrap !== null) {
 
   let currentEmail = null
 
+  function csrfToken() {
+    for (const part of document.cookie.split(';')) {
+      const [name, ...rest] = part.trim().split('=')
+      if (name === 'csrf' || name === '__Host-csrf') return rest.join('=')
+    }
+    return ''
+  }
+
   function paint() {
     open.textContent = currentEmail === null ? '登录' : currentEmail
     open.title = currentEmail === null ? '用 Aether 登录' : `${currentEmail}，点击退出`
@@ -66,7 +74,11 @@ if (wrap !== null) {
   open.addEventListener('click', () => {
     if (currentEmail !== null) {
       void (async () => {
-        await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' })
+        await fetch('/auth/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'x-csrf-token': csrfToken() },
+        })
         currentEmail = null
         paint()
       })()

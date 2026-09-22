@@ -31,13 +31,14 @@ export function aetherReady() {
 }
 
 /**
- * Redirect URI registered on the Aether app.
- * @param fallback built from the incoming Host when env is empty
+ * Redirect URI registered on the Aether app. Never taken from the Host header.
  * @returns absolute callback URL
  */
-export function aetherRedirectUri(fallback) {
+export function aetherRedirectUri() {
   const configured = (process.env.AETHER_REDIRECT_URI ?? '').trim()
-  return configured.length > 0 ? configured : fallback
+  if (configured.length > 0) return configured
+  const origin = (process.env.PUBLIC_ORIGIN ?? 'https://madecoding.com').replace(/\/$/u, '')
+  return `${origin}/auth/callback`
 }
 
 /**

@@ -6,8 +6,22 @@ const status = document.querySelector('#rental-status')
 const issued = document.querySelector('#rental-issued')
 const form = document.querySelector('#rental')
 
-let signedIn = false
-let orderId = ''
+function csrfToken() {
+  for (const part of document.cookie.split(';')) {
+    const [name, ...rest] = part.trim().split('=')
+    if (name === 'csrf' || name === '__Host-csrf') return rest.join('=')
+  }
+  return ''
+}
+
+function checkoutHostOk(url) {
+  try {
+    const host = new URL(url).hostname
+    return url.startsWith('https://') && (host === 'checkout.waffo.ai' || host === 'pancake.waffo.ai' || host.endsWith('.waffo.ai'))
+  } catch {
+    return false
+  }
+}
 
 function setStatus(text) {
   status.textContent = text
@@ -102,7 +116,7 @@ form?.addEventListener('submit', (event) => {
     const response = await fetch('/orders', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-csrf-token': csrfToken() },
       body: JSON.stringify({ plan_id: plan.value, hours: paidHours }),
     })
     const body = await response.json().catch(() => ({}))
@@ -111,7 +125,7 @@ form?.addEventListener('submit', (event) => {
       return
     }
     orderId = typeof body.order_id === 'string' ? body.order_id : ''
-    if (typeof body.checkout === 'string' && body.checkout.startsWith('https://')) {
+    if (typeof body.checkout === 'string' && checkoutHostOk(body.checkout)) {
       setStatus('正在打开收银台…')
       window.open(body.checkout, '_blank', 'noopener,noreferrer')
       return

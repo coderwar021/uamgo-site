@@ -66,11 +66,14 @@ test('http OAuth callback then me logout', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'madecoding-site-'))
   process.env.DATABASE_PATH = join(dir, 'store.json')
   process.env.PORT = '0'
+  delete process.env.STORE_KEY
+  delete process.env.STORE_KEY_BASE64
   const { server } = await import(`../server.mjs?t=${Date.now()}`)
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address()
   const origin = `http://127.0.0.1:${port}`
   process.env.AETHER_REDIRECT_URI = `${origin}/auth/callback`
+  process.env.PUBLIC_ORIGIN = origin
   try {
     const start = await fetch(`${origin}/auth/aether`, { redirect: 'manual' })
     assert.equal(start.status, 302)
@@ -84,15 +87,24 @@ test('http OAuth callback then me logout', async () => {
       { redirect: 'manual', headers: { cookie: jar } },
     )
     assert.equal(callback.status, 302)
-    const session = (callback.headers.getSetCookie?.() ?? [])
-      .find((row) => row.startsWith('session='))
-      ?.split(';')[0]
+    const cookies = callback.headers.getSetCookie?.() ?? []
+    const session = cookies.find((row) => row.startsWith('session='))?.split(';')[0]
+    const csrf = cookies.find((row) => row.startsWith('csrf='))?.split(';')[0]
     assert.match(session ?? '', /session=/)
     const me = await fetch(`${origin}/auth/me`, { headers: { cookie: session } })
     assert.deepEqual(await me.json(), { email: 'user@made.local' })
+    const denied = await fetch(`${origin}/auth/logout`, {
+      method: 'POST',
+      headers: { cookie: `${session}; ${csrf}` },
+    })
+    assert.equal(denied.status, 403)
     const loggedOut = await fetch(`${origin}/auth/logout`, {
       method: 'POST',
-      headers: { cookie: session },
+      headers: {
+        cookie: `${session}; ${csrf}`,
+        origin,
+        'x-csrf-token': csrf?.slice('csrf='.length) ?? '',
+      },
     })
     assert.equal(loggedOut.status, 200)
     const empty = await fetch(`${origin}/auth/me`, { headers: { cookie: session } })
@@ -103,6 +115,15 @@ test('http OAuth callback then me logout', async () => {
       body: '{}',
     })
     assert.equal(webhook.status, 401)
+    const badId = await fetch(`${origin}/orders/../secret`)
+    assert.equal(badId.status, 404)
+    const home = await fetch(`${origin}/`)
+    assert.match(home.headers.get('content-security-policy') ?? '', /default-src 'self'/)
+    assert.equal(home.headers.get('x-content-type-options'), 'nosniff')
+    const wrongState = await fetch(`${origin}/auth/callback?code=abc&state=nope`, {
+      headers: { cookie: jar },
+    })
+    assert.equal(wrongState.status, 400)
   } finally {
     server.close()
     mock.close()
