@@ -142,14 +142,41 @@ export function userForToken(store, token) {
 
 /**
  * @param {string} cookieHeader
+ * @param {string} name
+ * @returns {string}
+ */
+export function cookieValue(cookieHeader, name) {
+  for (const part of String(cookieHeader ?? '').split(';')) {
+    const [key, ...rest] = part.trim().split('=')
+    if (key === name) return rest.join('=')
+  }
+  return ''
+}
+
+/**
+ * @param {string} cookieHeader
  * @returns {string}
  */
 export function sessionFromCookie(cookieHeader) {
-  for (const part of String(cookieHeader ?? '').split(';')) {
-    const [name, ...rest] = part.trim().split('=')
-    if (name === 'session') return rest.join('=')
-  }
-  return ''
+  return cookieValue(cookieHeader, 'session')
+}
+
+/**
+ * @param {string} name
+ * @param {string} token
+ * @param {boolean} secure
+ * @param {number} maxAge
+ */
+export function namedCookie(name, token, secure, maxAge) {
+  const pieces = [
+    `${name}=${token}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${String(maxAge)}`,
+  ]
+  if (secure) pieces.push('Secure')
+  return pieces.join('; ')
 }
 
 /**
@@ -158,13 +185,5 @@ export function sessionFromCookie(cookieHeader) {
  * @param {number} maxAge
  */
 export function sessionCookie(secure, token, maxAge) {
-  const pieces = [
-    `session=${token}`,
-    'Path=/',
-    'HttpOnly',
-    'SameSite=Lax',
-    `Max-Age=${String(maxAge)}`,
-  ]
-  if (secure) pieces.push('Secure')
-  return pieces.join('; ')
+  return namedCookie('session', token, secure, maxAge)
 }

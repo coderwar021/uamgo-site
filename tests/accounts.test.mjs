@@ -43,34 +43,26 @@ test('sessionForEmail reuses the same user', () => {
   assert.notEqual(first.token, second.token)
 })
 
-test('http register login me logout via Aether OTP', async () => {
+test('http OAuth callback then me logout', async () => {
   const mock = createServer((request, response) => {
-    const chunks = []
-    request.on('data', (chunk) => chunks.push(chunk))
-    request.on('end', () => {
-      const url = new URL(request.url ?? '/', 'http://aether.test')
-      const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+    const url = new URL(request.url ?? '/', 'http://aether.test')
+    if (request.method === 'POST' && url.pathname === '/oauth/token') {
       response.setHeader('content-type', 'application/json')
-      if (url.pathname === '/api/auth/send-otp') {
-        response.end(JSON.stringify({ ok: true }))
-        return
-      }
-      if (url.pathname === '/api/auth/register' || url.pathname === '/api/auth/login') {
-        if (body.code === '123456') {
-          response.end(JSON.stringify({ ok: true }))
-          return
-        }
-        response.statusCode = 401
-        response.end(JSON.stringify({ error: '账号或密码错误' }))
-        return
-      }
-      response.statusCode = 404
-      response.end('{}')
-    })
+      response.end(JSON.stringify({ access_token: 'tok_test', token_type: 'Bearer' }))
+      return
+    }
+    if (request.method === 'GET' && url.pathname === '/oauth/userinfo') {
+      response.setHeader('content-type', 'application/json')
+      response.end(JSON.stringify({ email: 'user@made.local', sub: '1' }))
+      return
+    }
+    response.statusCode = 404
+    response.end('{}')
   })
   await new Promise((resolve) => mock.listen(0, '127.0.0.1', resolve))
   const aetherPort = mock.address().port
   process.env.AETHER_ORIGIN = `http://127.0.0.1:${aetherPort}`
+  process.env.AETHER_CLIENT_ID = 'madecoding-test'
   const dir = await mkdtemp(join(tmpdir(), 'madecoding-site-'))
   process.env.DATABASE_PATH = join(dir, 'store.json')
   process.env.PORT = '0'
@@ -78,42 +70,33 @@ test('http register login me logout via Aether OTP', async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address()
   const origin = `http://127.0.0.1:${port}`
+  process.env.AETHER_REDIRECT_URI = `${origin}/auth/callback`
   try {
-    const otp = await fetch(`${origin}/auth/otp`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: 'user@made.local', purpose: 'register' }),
-    })
-    assert.equal(otp.status, 200)
-    const registered = await fetch(`${origin}/auth/register`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        email: 'user@made.local',
-        password: 'long-enough',
-        confirmPassword: 'long-enough',
-        name: 'User',
-        code: '123456',
-      }),
-    })
-    assert.equal(registered.status, 201)
-    const cookie = registered.headers.get('set-cookie')
-    assert.match(cookie ?? '', /session=/)
-    const me = await fetch(`${origin}/auth/me`, { headers: { cookie: cookie.split(';')[0] } })
+    const start = await fetch(`${origin}/auth/aether`, { redirect: 'manual' })
+    assert.equal(start.status, 302)
+    const location = start.headers.get('location') ?? ''
+    assert.match(location, /\/oauth\/authorize/)
+    const setCookie = start.headers.getSetCookie?.() ?? []
+    const jar = setCookie.map((row) => row.split(';')[0]).join('; ')
+    const authorize = new URL(location)
+    const callback = await fetch(
+      `${origin}/auth/callback?code=abc&state=${authorize.searchParams.get('state')}`,
+      { redirect: 'manual', headers: { cookie: jar } },
+    )
+    assert.equal(callback.status, 302)
+    const session = (callback.headers.getSetCookie?.() ?? [])
+      .find((row) => row.startsWith('session='))
+      ?.split(';')[0]
+    assert.match(session ?? '', /session=/)
+    const me = await fetch(`${origin}/auth/me`, { headers: { cookie: session } })
     assert.deepEqual(await me.json(), { email: 'user@made.local' })
     const loggedOut = await fetch(`${origin}/auth/logout`, {
       method: 'POST',
-      headers: { cookie: cookie.split(';')[0] },
+      headers: { cookie: session },
     })
     assert.equal(loggedOut.status, 200)
-    const empty = await fetch(`${origin}/auth/me`, { headers: { cookie: cookie.split(';')[0] } })
+    const empty = await fetch(`${origin}/auth/me`, { headers: { cookie: session } })
     assert.deepEqual(await empty.json(), { email: null })
-    const login = await fetch(`${origin}/auth/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough', code: '123456' }),
-    })
-    assert.equal(login.status, 200)
     const webhook = await fetch(`${origin}/webhooks/waffo`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

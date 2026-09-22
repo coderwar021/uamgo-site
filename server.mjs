@@ -5,19 +5,24 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  cookieValue,
   loadStore,
+  namedCookie,
   saveStore,
   sessionCookie,
   sessionForEmail,
   sessionFromCookie,
   userForToken,
-  validateCredentials,
 } from './accounts.mjs'
 import {
   aetherMessage,
-  loginAether,
-  registerAether,
-  sendAetherOtp,
+  aetherReady,
+  aetherRedirectUri,
+  authorizeUrl,
+  createPkce,
+  emailFromUserinfo,
+  exchangeCode,
+  fetchUserinfo,
 } from './aether.mjs'
 import {
   createWaffoCheckout,
@@ -92,6 +97,28 @@ async function readJson(request) {
   const raw = Buffer.concat(chunks).toString('utf8')
   if (raw.length === 0) return {}
   return JSON.parse(raw)
+}
+
+function publicOrigin(request) {
+  const host = request.headers.host ?? 'madecoding.com'
+  const proto = isSecure(request) ? 'https' : 'http'
+  return `${proto}://${host}`
+}
+
+function pkceSetCookies(request, pkce) {
+  const secure = isSecure(request)
+  return [
+    namedCookie('aether_state', pkce.state, secure, 600),
+    namedCookie('aether_verifier', pkce.verifier, secure, 600),
+  ]
+}
+
+function pkceClearCookies(request) {
+  const secure = isSecure(request)
+  return [
+    namedCookie('aether_state', '', secure, 0),
+    namedCookie('aether_verifier', '', secure, 0),
+  ]
 }
 
 function cookieHeaders(request, token, clear = false) {
@@ -187,89 +214,88 @@ async function handleApi(request, response) {
     return true
   }
 
-  if (method === 'POST' && url.pathname === '/auth/otp') {
-    let body
-    try {
-      body = await readJson(request)
-    } catch {
-      sendJson(response, 400, { error: 'json' })
-      return true
-    }
-    const email = String(body.email ?? '')
-    const purpose = body.purpose === 'register' ? 'register' : 'login'
-    if (validateCredentials(email, 'long-enough') === 'email') {
-      sendJson(response, 400, { error: 'email', message: '请填写有效邮箱。' })
-      return true
-    }
-    const result = await sendAetherOtp(email, purpose)
-    if (!result.ok) {
-      sendJson(response, result.status === 503 ? 503 : 400, {
-        error: 'otp',
-        message: aetherMessage(result.json, '验证码发送失败。'),
+  if (method === 'GET' && url.pathname === '/auth/aether') {
+    if (!aetherReady()) {
+      sendJson(response, 503, {
+        error: 'aether_unconfigured',
+        message: '登录未开通：在 Railway 配置 AETHER_CLIENT_ID（Aether 控制台里付费应用的 client_id）。回调地址填 https://madecoding.com/auth/callback。机密客户端再配 AETHER_CLIENT_SECRET。',
       })
       return true
     }
-    const hint = result.json?.devCode
-    sendJson(response, 200, {
-      ok: true,
-      message: typeof hint === 'string' && hint.length > 0
-        ? `开发模式验证码：${hint}`
-        : '验证码已发到邮箱（Aether / mail.uamgo.com）。',
+    const redirectUri = aetherRedirectUri(`${publicOrigin(request)}/auth/callback`)
+    const pkce = createPkce()
+    response.writeHead(302, {
+      location: authorizeUrl(redirectUri, pkce),
+      'cache-control': 'no-store',
+      'set-cookie': pkceSetCookies(request, pkce),
     })
+    response.end()
     return true
   }
 
-  if (method === 'POST' && (url.pathname === '/auth/register' || url.pathname === '/auth/login')) {
-    let body
+  if (method === 'GET' && url.pathname === '/auth/callback') {
+    const error = url.searchParams.get('error')
+    if (typeof error === 'string' && error.length > 0) {
+      sendJson(response, 401, {
+        error,
+        message: aetherMessage(
+          { error, error_description: url.searchParams.get('error_description') },
+          'Aether 拒绝了授权。',
+        ),
+      })
+      return true
+    }
+    const code = url.searchParams.get('code') ?? ''
+    const state = url.searchParams.get('state') ?? ''
+    const expected = cookieValue(request.headers.cookie, 'aether_state')
+    const verifier = cookieValue(request.headers.cookie, 'aether_verifier')
+    if (code.length === 0 || state.length === 0 || state !== expected || verifier.length === 0) {
+      sendJson(response, 400, { error: 'state', message: 'OAuth 回调无效，请重新登录。' })
+      return true
+    }
+    const redirectUri = aetherRedirectUri(`${publicOrigin(request)}/auth/callback`)
+    let tokens
     try {
-      body = await readJson(request)
+      tokens = await exchangeCode(code, redirectUri, verifier)
     } catch {
-      sendJson(response, 400, { error: 'json' })
+      sendJson(response, 503, { error: 'token', message: '换 token 失败，邮箱服务暂时连不上。' })
       return true
     }
-    const invalid = validateCredentials(body.email, body.password)
-    if (invalid === 'email') {
-      sendJson(response, 400, { error: 'email', message: '请填写有效邮箱。' })
-      return true
-    }
-    if (invalid === 'password') {
-      sendJson(response, 400, { error: 'password', message: '密码至少 8 位。' })
-      return true
-    }
-    const code = String(body.code ?? '').trim()
-    if (!/^\d{6}$/u.test(code)) {
-      sendJson(response, 400, { error: 'code', message: '请填写 6 位邮箱验证码。' })
-      return true
-    }
-    const aether = url.pathname === '/auth/register'
-      ? await registerAether({
-        email: body.email,
-        password: body.password,
-        confirmPassword: body.confirmPassword ?? body.password,
-        name: String(body.name ?? '').trim() || String(body.email).split('@')[0],
-        code,
+    const access = tokens.json?.access_token
+    if (!tokens.ok || typeof access !== 'string') {
+      sendJson(response, tokens.status === 0 ? 503 : 401, {
+        error: 'token',
+        message: aetherMessage(tokens.json, 'Aether 没有返回 access_token。检查 client_id / secret 和订阅。'),
       })
-      : await loginAether({
-        email: body.email,
-        password: body.password,
-        code,
-      })
-    if (!aether.ok) {
-      sendJson(response, aether.status >= 400 && aether.status < 500 ? aether.status : 401, {
-        error: 'aether',
-        message: aetherMessage(aether.json, '登录失败。'),
+      return true
+    }
+    let profile
+    try {
+      profile = await fetchUserinfo(access)
+    } catch {
+      sendJson(response, 503, { error: 'userinfo', message: '读取 UserInfo 失败。' })
+      return true
+    }
+    const email = emailFromUserinfo(profile.json)
+    if (!profile.ok || email.length === 0) {
+      sendJson(response, 401, {
+        error: 'userinfo',
+        message: aetherMessage(profile.json, 'Aether 没有返回邮箱。scope 需要包含 email。'),
       })
       return true
     }
     const store = await loadStore(DB)
-    const result = sessionForEmail(store, body.email)
+    const result = sessionForEmail(store, email)
     await saveStore(DB, store)
-    sendJson(
-      response,
-      url.pathname === '/auth/register' ? 201 : 200,
-      { email: result.email },
-      cookieHeaders(request, result.token),
-    )
+    response.writeHead(302, {
+      location: '/',
+      'cache-control': 'no-store',
+      'set-cookie': [
+        sessionCookie(isSecure(request), result.token, SESSION_AGE),
+        ...pkceClearCookies(request),
+      ],
+    })
+    response.end()
     return true
   }
 

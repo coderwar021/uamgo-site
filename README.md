@@ -9,14 +9,13 @@ Landing pages for madecoding. Railway serves this repository as-is. `PORT` comes
 | `/deploy` | `public/deploy.html` |
 | `/config` | `public/config.html` |
 | `/terms` | `public/terms.html` |
-| `/auth/otp` `POST` | `{ email, purpose }` — 向 [Aether](https://mail.uamgo.com/) 发 6 位邮箱验证码 |
-| `/auth/register` `POST` | `{ email, password, confirmPassword, name, code }` |
-| `/auth/login` `POST` | `{ email, password, code }` |
+| `/auth/aether` `GET` | start Aether OAuth (authorization code + PKCE) |
+| `/auth/callback` `GET` | OAuth redirect; sets session from UserInfo `email` |
 | `/auth/me` `GET` | `{ email }` or `{ email: null }` |
 | `/orders` `POST` | logged-in GPU order → Waffo checkout URL |
 | `/webhooks/waffo` `POST` | Waffo `order.completed` (raw body + `X-Waffo-Signature`) |
 
-The header brand and the 首页 link always go to `/`. Login and register live in the top-right control on every page and use **Aether** at [mail.uamgo.com](https://mail.uamgo.com/) for the mailbox (OTP + password). Override the issuer with `AETHER_ORIGIN` (default `https://mail.uamgo.com`). `/deploy` only places an order.
+The header brand and the 首页 link always go to `/`. The top-right 登录 button starts **Aether OAuth 2.1** at [mail.uamgo.com](https://mail.uamgo.com/docs) (authorization code + PKCE). Register and verify email on Aether; we only keep a session from UserInfo. Set `AETHER_CLIENT_ID` (and `AETHER_CLIENT_SECRET` if the app is confidential). Register redirect URI `https://madecoding.com/auth/callback`. Optional: `AETHER_ORIGIN` (default `https://mail.uamgo.com`), `AETHER_REDIRECT_URI`. `/deploy` only places an order.
 
 Account records persist in `DATABASE_PATH` (default `data/store.json`). Attach a Railway volume there so redeploys keep users.
 
