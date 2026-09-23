@@ -47,6 +47,12 @@ import {
   productIdFromEnv,
   verifyWaffoWebhook,
 } from './waffo.mjs'
+import {
+  createRentalOrder,
+  fetchRentalOrder,
+  fetchRentalPlans,
+  forwardWaffoWebhook,
+} from './rental.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
@@ -239,6 +245,7 @@ async function handleApi(request, response) {
       }
       await saveStore(DB, store)
     }
+    void forwardWaffoWebhook(raw, typeof signature === 'string' ? signature : undefined).catch(() => undefined)
     sendJson(response, 200, { ok: true })
     return true
   }
@@ -362,6 +369,15 @@ async function handleApi(request, response) {
   }
 
   if (method === 'GET' && url.pathname === '/plans') {
+    try {
+      const remote = await fetchRentalPlans()
+      if (remote !== undefined && remote.length > 0) {
+        sendJson(response, 200, remote)
+        return true
+      }
+    } catch {
+      // Gateway down: keep the local catalog.
+    }
     sendJson(response, 200, PLANS)
     return true
   }
@@ -446,6 +462,12 @@ async function handleApi(request, response) {
       return true
     }
     order.checkout = checkout
+    try {
+      await createRentalOrder(order)
+    } catch {
+      sendJson(response, 503, { error: 'rental', message: '开通网关未就绪。' })
+      return true
+    }
     store.orders.push(order)
     await saveStore(DB, store)
     void ensureHttpWebhook().catch(() => undefined)
@@ -469,6 +491,15 @@ async function handleApi(request, response) {
     if (order === undefined) {
       sendJson(response, 404, { error: 'order' })
       return true
+    }
+    try {
+      const remote = await fetchRentalOrder(id)
+      if (remote && typeof remote.base_url === 'string') order.base_url = remote.base_url
+      if (remote && typeof remote.key === 'string') order.key = remote.key
+      if (remote && typeof remote.model === 'string') order.model = remote.model
+      if (remote && typeof remote.status === 'string') order.status = remote.status
+    } catch {
+      // Keep the local row if the gateway is down.
     }
     sendJson(response, 200, publicOrder(order))
     return true

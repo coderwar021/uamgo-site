@@ -5,6 +5,8 @@ const buy = document.querySelector('#rental-buy')
 const status = document.querySelector('#rental-status')
 const issued = document.querySelector('#rental-issued')
 const form = document.querySelector('#rental')
+let signedIn = false
+let orderId = ''
 
 function csrfToken() {
   for (const part of document.cookie.split(';')) {
@@ -66,7 +68,10 @@ async function pollOrder() {
   const response = await fetch(`/orders/${orderId}`, { credentials: 'same-origin' })
   if (!response.ok) return
   const body = await response.json()
-  if (typeof body.base_url !== 'string' || typeof body.key !== 'string') return
+    if (typeof body.base_url !== 'string' || typeof body.key !== 'string') {
+      if (body.status === 'paid' || body.status === 'provisioning') setStatus('已支付，正在开通 GPU…')
+      return
+    }
   issued.hidden = false
   issued.replaceChildren()
   for (const [label, value] of [
