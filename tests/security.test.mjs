@@ -6,6 +6,7 @@ import { test } from 'node:test'
 import { assertProductionStoreKey, loadStore, saveStore, sessionForEmail, userForToken } from '../accounts.mjs'
 import {
   checkoutAllowed,
+  clientIp,
   isUuid,
   originAllowed,
   securityHeaders,
@@ -19,6 +20,17 @@ test('security headers include HSTS CSP frame-ancestors and nosniff', () => {
   assert.equal(headers['x-content-type-options'], 'nosniff')
   assert.equal(headers['x-frame-options'], 'DENY')
   assert.equal(headers['cross-origin-opener-policy'], 'same-origin')
+  assert.match(headers['permissions-policy'], /camera=\(\)/)
+})
+
+test('clientIp uses Cloudflare, never a spoofed X-Forwarded-For', () => {
+  assert.equal(clientIp({
+    headers: { 'cf-connecting-ip': '203.0.113.9', 'x-forwarded-for': '1.2.3.4' },
+  }), '203.0.113.9')
+  assert.equal(clientIp({
+    headers: { 'x-forwarded-for': '1.2.3.4' },
+    socket: { remoteAddress: '127.0.0.1' },
+  }), '127.0.0.1')
 })
 
 test('checkoutAllowed only allows https waffo hosts', () => {
@@ -115,14 +127,14 @@ test('http headers host-independent callback rate body and generic 500', async (
   try {
     const start = await fetch(`${origin}/auth/aether`, {
       redirect: 'manual',
-      headers: { 'x-forwarded-for': '198.51.100.10' },
+      headers: { 'cf-connecting-ip': '198.51.100.10' },
     })
     assert.equal(start.status, 302)
     const location = start.headers.get('location') ?? ''
     assert.match(location, /redirect_uri=https%3A%2F%2Fmadecoding.com%2Fauth%2Fcallback/)
     const fat = await fetch(`${origin}/webhooks/waffo`, {
       method: 'POST',
-      headers: { 'x-forwarded-for': '198.51.100.11', 'content-type': 'application/json' },
+      headers: { 'cf-connecting-ip': '198.51.100.11', 'content-type': 'application/json' },
       body: 'x'.repeat(70 * 1024),
     })
     assert.equal(fat.status, 413)
@@ -130,13 +142,13 @@ test('http headers host-independent callback rate body and generic 500', async (
     for (let i = 0; i < 21; i += 1) {
       const hit = await fetch(`${origin}/auth/aether`, {
         redirect: 'manual',
-        headers: { 'x-forwarded-for': '198.51.100.12' },
+        headers: { 'cf-connecting-ip': '198.51.100.12' },
       })
       last = hit.status
       if (i === 20) assert.equal(hit.headers.get('retry-after'), '60')
     }
     assert.equal(last, 429)
-    const home = await fetch(`${origin}/`, { headers: { 'x-forwarded-for': '198.51.100.13' } })
+    const home = await fetch(`${origin}/`, { headers: { 'cf-connecting-ip': '198.51.100.13' } })
     assert.equal(home.headers.get('x-frame-options'), 'DENY')
     assert.match(home.headers.get('strict-transport-security') ?? '', /preload/)
   } finally {

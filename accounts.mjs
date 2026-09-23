@@ -224,8 +224,7 @@ export function userForToken(store, token) {
   if (token.length === 0) return undefined
   purgeExpired(store)
   const digest = sha256Hex(token)
-  const session = store.sessions.find((row) => row.token_hash === digest
-    || (typeof row.token === 'string' && row.token === token))
+  const session = store.sessions.find((row) => row.token_hash === digest)
   if (session === undefined) return undefined
   return store.users.find((user) => user.id === session.user_id)
 }

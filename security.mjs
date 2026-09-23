@@ -60,17 +60,16 @@ export function safeEqual(left, right) {
 }
 
 /**
- * Client IP. Prefer Cloudflare / proxy headers Railway actually sets.
+ * Client IP. Prefer Cloudflare / Railway headers the proxy overwrites.
+ * Ignore X-Forwarded-For: a browser can set it and skip the rate limiter.
  * @param request incoming
  * @returns ip
  */
 export function clientIp(request) {
   const cf = request.headers['cf-connecting-ip']
   if (typeof cf === 'string' && cf.length > 0) return cf.trim()
-  const forwarded = request.headers['x-forwarded-for']
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim()
-  }
+  const real = request.headers['x-real-ip']
+  if (typeof real === 'string' && real.length > 0) return real.trim()
   return request.socket?.remoteAddress ?? '0.0.0.0'
 }
 
