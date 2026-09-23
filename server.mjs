@@ -545,11 +545,10 @@ const server = createServer((request, response) => {
   })
 })
 
-const startedDirectly = process.argv[1] !== undefined
-  && fileURLToPath(import.meta.url) === resolve(process.argv[1])
-if (startedDirectly) {
+const inTest = process.env.NODE_TEST_CONTEXT !== undefined
+if (!inTest) {
   assertProductionStoreKey()
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     process.stdout.write(`madecoding.com listening on :${PORT}\n`)
   })
 }
