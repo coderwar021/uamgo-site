@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Static site for madecoding.com: terms of use, installer, and GPU-server purchase.",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs"
