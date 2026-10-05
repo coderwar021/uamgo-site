@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 160" preserveAspectRatio="none">
+  <path d="M-20 64 C160 14 360 18 560 66 S940 128 1180 58 S1400 36 1460 48 V180 H-20 Z" fill="#a6e89a" stroke="#221e33" stroke-width="4" vector-effect="non-scaling-stroke"/>
+  <path d="M-20 104 C200 58 420 70 640 104 S1080 140 1460 86 V180 H-20 Z" fill="#62cc5f" stroke="#221e33" stroke-width="4" vector-effect="non-scaling-stroke"/>
+  <path d="M-20 138 C260 118 520 124 760 136 S1200 150 1460 128 V180 H-20 Z" fill="#3a9e48" stroke="#221e33" stroke-width="4" vector-effect="non-scaling-stroke"/>
+</svg>

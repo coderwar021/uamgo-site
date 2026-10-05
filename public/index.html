@@ -6,17 +6,25 @@
 <title>madecoding — 在你自己的机器上写代码</title>
 <meta name="description" content="本地运行的 AI 编码助手。终端与网页两套界面。也可按小时购买独立模型服务器。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=2">
+<link rel="stylesheet" href="/styles.css?v=3">
+<script src="/boot.js?v=1"></script>
 </head>
 <body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+</div>
 
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="/">
-      <span class="mark" aria-hidden="true"></span>
+      <span class="mark" aria-hidden="true"><span class="ball"></span></span>
       madecoding
     </a>
-    <nav>
+    <nav aria-label="主导航">
       <a href="/" aria-current="page">首页</a>
       <a href="/install">安装</a>
       <a href="/deploy">模型部署</a>
@@ -27,53 +35,154 @@
 </header>
 
 <main class="wrap">
-  <div class="hero">
-    <div>
-      <p class="kicker">Local coding agent</p>
-      <h1 class="text-fade-up">模型跟着你的仓库走。<em>不进云端。</em></h1>
-      <p class="lede fade-in-up">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="kicker"><span class="ep">第 01 集</span>Local coding agent</p>
+      <h1 class="title title-hero">模型跟着你的<br>仓库走。<em>不进云端。</em></h1>
+      <p class="lede">
         终端与网页两套界面，共用一份配置。代码、会话和工作区都留在本机。
         需要独立 GPU 时，另开一页按小时购买。
       </p>
-    </div>
-    <div class="ticket fade-in-up">
-      <div class="row"><span>安装命令</span><span>curl</span></div>
-      <div class="install">
-        <span class="prompt">$</span>
-        <code id="cmd">curl -fsSL https://madecoding.com/install.sh | sh</code>
-        <button class="copy ripple-btn press" type="button" data-copy="#cmd">复制</button>
+      <div class="ticket">
+        <div class="row"><span>安装命令</span><span>curl</span></div>
+        <div class="install">
+          <span class="prompt">$</span>
+          <code id="cmd">curl -fsSL https://madecoding.com/install.sh | sh</code>
+          <button class="copy" type="button" data-copy="#cmd">复制</button>
+        </div>
+        <p class="hint">一条命令装好两套界面。自包含程序，不需要 Node.js，也不需要编译器。</p>
       </div>
-      <p class="hint">一条命令装好两套界面。自包含程序，不需要 Node.js，也不需要编译器。</p>
     </div>
-  </div>
 
-  <div class="services">
-    <a class="service hover-lift" href="/install">
+    <div class="stage" aria-hidden="true">
+      <span class="sun"><span class="sun-rays"></span><span class="sun-core"><span class="sun-face"></span></span></span>
+      <span class="cloud mini m1"></span>
+      <span class="cloud mini m2"></span>
+      <span class="twinkle t1"></span>
+      <span class="twinkle t2"></span>
+      <span class="twinkle t3"></span>
+      <span class="sticker s1">&lt;/&gt;</span>
+      <span class="sticker s2">本机</span>
+      <span class="hill hill-a"></span>
+      <span class="hill hill-b"></span>
+      <span class="flower sf1"></span>
+      <span class="flower sf2"></span>
+      <span class="flower sf3"></span>
+      <div class="bot-wrap">
+        <p class="bubble" data-lines="代码留在你家！|终端、网页，一份配置。|要 GPU？按小时租！|点我试试？">代码留在你家！</p>
+        <svg class="bot" viewBox="0 0 200 230">
+          <g class="arm-left">
+            <path d="M60 172 Q32 180 28 204" fill="none" stroke="#221e33" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="28" cy="207" r="11" fill="#3ddc97" stroke="#221e33" stroke-width="5"/>
+          </g>
+          <g class="arm-wave">
+            <path d="M140 172 Q170 162 177 130" fill="none" stroke="#221e33" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="178" cy="124" r="11" fill="#3ddc97" stroke="#221e33" stroke-width="5"/>
+          </g>
+          <rect x="56" y="150" width="88" height="62" rx="20" fill="#ffd23f" stroke="#221e33" stroke-width="6"/>
+          <path d="M86 172 l-10 9 10 9 M114 172 l10 9 -10 9 M104 168 l-8 26" fill="none" stroke="#221e33" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <g class="antenna">
+            <line x1="100" y1="42" x2="100" y2="17" stroke="#221e33" stroke-width="6" stroke-linecap="round"/>
+            <circle class="antenna-tip" cx="100" cy="13" r="9" fill="#ff6b57" stroke="#221e33" stroke-width="5"/>
+          </g>
+          <rect x="15" y="82" width="16" height="32" rx="7" fill="#ff9fcb" stroke="#221e33" stroke-width="5"/>
+          <rect x="169" y="82" width="16" height="32" rx="7" fill="#ff9fcb" stroke="#221e33" stroke-width="5"/>
+          <rect x="26" y="40" width="148" height="116" rx="38" fill="#3ddc97" stroke="#221e33" stroke-width="6"/>
+          <rect x="46" y="60" width="108" height="76" rx="24" fill="#221e33"/>
+          <rect x="58" y="66" width="24" height="7" rx="3.5" fill="#ffffff" opacity="0.25"/>
+          <g class="eyes">
+            <rect class="eye" x="68" y="80" width="18" height="24" rx="9" fill="#c9fbff"/>
+            <rect class="eye" x="114" y="80" width="18" height="24" rx="9" fill="#c9fbff"/>
+          </g>
+          <path d="M88 116 Q100 127 112 116" fill="none" stroke="#c9fbff" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="62" cy="121" rx="8" ry="5" fill="#ff9fcb" opacity="0.85"/>
+          <ellipse cx="138" cy="121" rx="8" ry="5" fill="#ff9fcb" opacity="0.85"/>
+        </svg>
+        <span class="bot-shadow"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="services">
+    <a class="service tone-sun scroll-reveal" href="/install">
+      <span class="service-art" aria-hidden="true">
+        <svg viewBox="0 0 120 100">
+          <g class="drop-arrow">
+            <path d="M60 4 V26 M50 17 L60 27 L70 17" fill="none" stroke="#221e33" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+          <path d="M22 44 L60 32 L98 44 L60 56 Z" fill="#ffd9a8" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M22 44 V82 L60 94 V56 Z" fill="#ffa94d" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M98 44 V82 L60 94 V56 Z" fill="#ff8f3a" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          <circle cx="34" cy="66" r="3.5" fill="#221e33"/>
+          <circle cx="48" cy="70" r="3.5" fill="#221e33"/>
+          <path d="M34 77 Q41 83 48 80" fill="none" stroke="#221e33" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </span>
       <h2>安装</h2>
       <p>macOS 与 Linux，x86_64 和 arm64。装完运行 madecoding，自己选终端或网页。</p>
       <span class="go">打开安装页 →</span>
     </a>
-    <a class="service hover-lift" href="/deploy">
+    <a class="service tone-grape scroll-reveal" href="/deploy">
+      <span class="service-art" aria-hidden="true">
+        <svg viewBox="0 0 120 100">
+          <path d="M28 82 v10 M44 82 v10 M60 82 v10 M76 82 v10 M92 82 v10" stroke="#221e33" stroke-width="5" stroke-linecap="round"/>
+          <rect x="10" y="22" width="100" height="62" rx="14" fill="#b6a8ff" stroke="#221e33" stroke-width="5"/>
+          <circle cx="40" cy="53" r="21" fill="#fffdf7" stroke="#221e33" stroke-width="5"/>
+          <g class="fan">
+            <path d="M40 53 C35 40 44 32 52 37 C48 44 45 49 40 53 Z" fill="#ffd23f" stroke="#221e33" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M40 53 C35 40 44 32 52 37 C48 44 45 49 40 53 Z" fill="#ffd23f" stroke="#221e33" stroke-width="3" stroke-linejoin="round" transform="rotate(120 40 53)"/>
+            <path d="M40 53 C35 40 44 32 52 37 C48 44 45 49 40 53 Z" fill="#ffd23f" stroke="#221e33" stroke-width="3" stroke-linejoin="round" transform="rotate(240 40 53)"/>
+          </g>
+          <circle cx="40" cy="53" r="4.5" fill="#221e33"/>
+          <rect x="70" y="36" width="32" height="34" rx="9" fill="#221e33"/>
+          <rect class="eye" x="76" y="44" width="6" height="10" rx="3" fill="#c9fbff"/>
+          <rect class="eye" x="90" y="44" width="6" height="10" rx="3" fill="#c9fbff"/>
+          <path d="M79 60 Q86 65 93 60" fill="none" stroke="#c9fbff" stroke-width="3" stroke-linecap="round"/>
+          <circle class="led" cx="98" cy="29" r="3.5" fill="#3ddc97" stroke="#221e33" stroke-width="2"/>
+        </svg>
+      </span>
       <h2>模型部署</h2>
       <p>按小时买独立服务器。支付后签发我们的地址和密钥，源站不交给买家。</p>
       <span class="go">打开部署页 →</span>
     </a>
-    <a class="service hover-lift" href="/config">
+    <a class="service tone-mint scroll-reveal" href="/config">
+      <span class="service-art" aria-hidden="true">
+        <svg viewBox="0 0 120 100">
+          <path d="M30 8 H76 L94 26 V92 H30 Z" fill="#fffdf7" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M76 8 V26 H94" fill="#e9f8ff" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          <path d="M40 34 H70 M40 46 H82 M40 58 H64" stroke="#8f7bff" stroke-width="5" stroke-linecap="round"/>
+          <circle class="eye" cx="50" cy="73" r="3.5" fill="#221e33"/>
+          <circle class="eye" cx="72" cy="73" r="3.5" fill="#221e33"/>
+          <path d="M54 81 Q61 87 68 81" fill="none" stroke="#221e33" stroke-width="3.5" stroke-linecap="round"/>
+          <ellipse cx="42" cy="81" rx="5" ry="3" fill="#ff9fcb"/>
+          <ellipse cx="80" cy="81" rx="5" ry="3" fill="#ff9fcb"/>
+        </svg>
+      </span>
       <h2>配置</h2>
       <p>两套界面读同一份 ~/.madecoding/config.toml。密钥只写环境变量名。</p>
       <span class="go">打开配置页 →</span>
     </a>
-  </div>
+  </section>
 </main>
 
-<footer class="wrap">
-  <a href="/install">安装</a>
-  <a href="/deploy">模型部署</a>
-  <a href="/config">配置</a>
-  <a href="/terms">用户协议</a>
-  <span class="spacer">© 2026 madecoding</span>
+<div class="ground" aria-hidden="true">
+  <span class="flower f1"></span>
+  <span class="flower f2"></span>
+  <span class="flower f3"></span>
+  <span class="flower f4"></span>
+  <span class="flower f5"></span>
+  <span class="flower f6"></span>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="/install">安装</a>
+    <a href="/deploy">模型部署</a>
+    <a href="/config">配置</a>
+    <a href="/terms">用户协议</a>
+    <span class="spacer">© 2026 madecoding</span>
+  </div>
 </footer>
 
-<script src="/site.js?v=2"></script>
+<script src="/site.js?v=3"></script>
 </body>
 </html>

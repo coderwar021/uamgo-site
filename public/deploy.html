@@ -6,17 +6,25 @@
 <title>模型部署 — madecoding</title>
 <meta name="description" content="按小时购买独立模型服务器。不可退款，开通时长与下单小时数相同。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=2">
+<link rel="stylesheet" href="/styles.css?v=3">
+<script src="/boot.js?v=1"></script>
 </head>
 <body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+</div>
 
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="/">
-      <span class="mark" aria-hidden="true"></span>
+      <span class="mark" aria-hidden="true"><span class="ball"></span></span>
       madecoding
     </a>
-    <nav>
+    <nav aria-label="主导航">
       <a href="/">首页</a>
       <a href="/install">安装</a>
       <a href="/deploy" aria-current="page">模型部署</a>
@@ -26,39 +34,85 @@
   </div>
 </header>
 
-<main class="wrap page scroll-reveal">
-  <p class="kicker">GPU hours</p>
-  <h1>按小时租一台。<br>只给你我们的密钥。</h1>
+<main class="wrap page">
+  <p class="kicker"><span class="ep">第 03 集</span>GPU hours</p>
+  <h1 class="title">按小时租一台。<br>只给你我们的密钥。</h1>
   <p>
     每笔购买不可退款，未使用时长不退，仅在服务器在线期间可用。
     可买 1 到 168 小时，下单几小时就开几小时。开通后签发我们的 API 地址和密钥，不是源站。
   </p>
   <p>价格：group5 ¥50/小时，group6 ¥25/小时。账号在右上角登录或注册，本页只下单。</p>
 
-  <form id="rental" class="rental">
-    <p id="rental-need-login" class="notice">请先点右上角登录或注册，然后回到这里选择套餐。</p>
-    <label>
-      <span>套餐</span>
-      <select id="rental-plan" disabled></select>
-    </label>
-    <label>
-      <span>小时</span>
-      <input id="rental-hours" type="number" min="1" max="168" value="1" disabled>
-    </label>
-    <button type="submit" id="rental-buy" disabled>支付并开通</button>
-    <p id="rental-status" class="hint" role="status"></p>
-    <dl id="rental-issued" hidden></dl>
-  </form>
+  <div class="deploy-grid">
+    <form id="rental" class="rental">
+      <p id="rental-need-login" class="notice">请先点右上角登录或注册，然后回到这里选择套餐。</p>
+      <label>
+        <span>套餐</span>
+        <select id="rental-plan" disabled></select>
+      </label>
+      <label>
+        <span>小时</span>
+        <input id="rental-hours" type="number" min="1" max="168" value="1" disabled>
+      </label>
+      <button type="submit" id="rental-buy" disabled>支付并开通</button>
+      <p id="rental-status" class="hint" role="status"></p>
+      <dl id="rental-issued" hidden></dl>
+    </form>
+
+    <div class="gpu-stage" aria-hidden="true">
+      <span class="twinkle t1"></span>
+      <span class="twinkle t2"></span>
+      <svg class="gpu-buddy" viewBox="0 0 240 200">
+        <g class="gpu-body">
+          <path d="M52 146 v20 M74 146 v20 M96 146 v20 M118 146 v20 M140 146 v20 M162 146 v20 M184 146 v20" stroke="#221e33" stroke-width="7" stroke-linecap="round"/>
+          <rect x="18" y="38" width="204" height="112" rx="22" fill="#8f7bff" stroke="#221e33" stroke-width="6"/>
+          <rect x="30" y="48" width="70" height="8" rx="4" fill="#ffffff" opacity="0.3"/>
+          <circle cx="78" cy="96" r="40" fill="#fffdf7" stroke="#221e33" stroke-width="6"/>
+          <g class="fan">
+            <path d="M78 96 C70 70 88 58 100 68 C94 80 88 88 78 96 Z" fill="#ffd23f" stroke="#221e33" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M78 96 C70 70 88 58 100 68 C94 80 88 88 78 96 Z" fill="#ffd23f" stroke="#221e33" stroke-width="4" stroke-linejoin="round" transform="rotate(120 78 96)"/>
+            <path d="M78 96 C70 70 88 58 100 68 C94 80 88 88 78 96 Z" fill="#ffd23f" stroke="#221e33" stroke-width="4" stroke-linejoin="round" transform="rotate(240 78 96)"/>
+          </g>
+          <circle cx="78" cy="96" r="8" fill="#221e33"/>
+          <rect x="132" y="62" width="74" height="68" rx="16" fill="#221e33"/>
+          <g class="eyes">
+            <rect class="eye" x="148" y="80" width="13" height="19" rx="6.5" fill="#c9fbff"/>
+            <rect class="eye" x="177" y="80" width="13" height="19" rx="6.5" fill="#c9fbff"/>
+          </g>
+          <path d="M155 111 Q169 121 183 111" fill="none" stroke="#c9fbff" stroke-width="4.5" stroke-linecap="round"/>
+          <ellipse cx="143" cy="114" rx="6" ry="4" fill="#ff9fcb"/>
+          <ellipse cx="195" cy="114" rx="6" ry="4" fill="#ff9fcb"/>
+          <circle class="led" cx="184" cy="50" r="5" fill="#3ddc97" stroke="#221e33" stroke-width="3"/>
+          <circle class="led led-b" cx="202" cy="50" r="5" fill="#ff6b57" stroke="#221e33" stroke-width="3"/>
+        </g>
+        <ellipse class="gpu-shadow" cx="120" cy="188" rx="84" ry="8" fill="rgba(34,30,51,0.22)"/>
+      </svg>
+      <div class="price-tags">
+        <span class="tag tag-a">group5<b>¥50</b>每小时</span>
+        <span class="tag tag-b">group6<b>¥25</b>每小时</span>
+      </div>
+    </div>
+  </div>
 </main>
 
-<footer class="wrap">
-  <a href="/">首页</a>
-  <a href="/config">配置</a>
-  <a href="/terms">用户协议</a>
-  <span class="spacer">© 2026 madecoding</span>
+<div class="ground" aria-hidden="true">
+  <span class="flower f1"></span>
+  <span class="flower f2"></span>
+  <span class="flower f3"></span>
+  <span class="flower f4"></span>
+  <span class="flower f5"></span>
+  <span class="flower f6"></span>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="/">首页</a>
+    <a href="/config">配置</a>
+    <a href="/terms">用户协议</a>
+    <span class="spacer">© 2026 madecoding</span>
+  </div>
 </footer>
 
-<script src="/site.js?v=2"></script>
+<script src="/site.js?v=3"></script>
 <script src="/rental.js?v=4" type="module"></script>
 </body>
 </html>

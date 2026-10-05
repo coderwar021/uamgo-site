@@ -6,17 +6,25 @@
 <title>配置 — madecoding</title>
 <meta name="description" content="终端与网页共用 ~/.madecoding/config.toml。密钥在 madeapi.com/keys。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=2">
+<link rel="stylesheet" href="/styles.css?v=3">
+<script src="/boot.js?v=1"></script>
 </head>
 <body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+</div>
 
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="/">
-      <span class="mark" aria-hidden="true"></span>
+      <span class="mark" aria-hidden="true"><span class="ball"></span></span>
       madecoding
     </a>
-    <nav>
+    <nav aria-label="主导航">
       <a href="/">首页</a>
       <a href="/install">安装</a>
       <a href="/deploy">模型部署</a>
@@ -26,28 +34,75 @@
   </div>
 </header>
 
-<main class="wrap page scroll-reveal">
-  <p class="kicker">Config</p>
-  <h1>配一次，终端和网页一起用。</h1>
+<main class="wrap page">
+  <p class="kicker"><span class="ep">第 04 集</span>Config</p>
+  <h1 class="title">配一次，终端和网页一起用。</h1>
   <p>
     两套界面读同一份 <code>~/.madecoding/config.toml</code>。密钥到
     <a href="https://madeapi.com/keys">madeapi.com/keys</a> 申请，
     也可以在网页界面的设置 → 模型里粘贴。
   </p>
 
-  <pre>[model_providers.madecoding]
+  <div class="flow" aria-hidden="true">
+    <div class="node">
+      <svg viewBox="0 0 80 64">
+        <rect x="4" y="6" width="72" height="52" rx="10" fill="#221e33" stroke="#221e33" stroke-width="4"/>
+        <rect x="4" y="6" width="72" height="13" rx="6" fill="#8f7bff" stroke="#221e33" stroke-width="4"/>
+        <path d="M16 32 L24 38 L16 44" fill="none" stroke="#ffd23f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect class="caret" x="30" y="40" width="12" height="5" fill="#c9fbff"/>
+      </svg>
+      <b>终端</b>
+    </div>
+    <span class="wire"></span>
+    <div class="node node-file">
+      <svg viewBox="0 0 80 64">
+        <path d="M18 4 H50 L64 18 V60 H18 Z" fill="#fffdf7" stroke="#221e33" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M50 4 V18 H64" fill="#e9f8ff" stroke="#221e33" stroke-width="4" stroke-linejoin="round"/>
+        <circle class="eye" cx="33" cy="36" r="3" fill="#221e33"/>
+        <circle class="eye" cx="49" cy="36" r="3" fill="#221e33"/>
+        <path d="M36 44 Q41 49 46 44" fill="none" stroke="#221e33" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <b>config.toml</b>
+    </div>
+    <span class="wire wire-rev"></span>
+    <div class="node">
+      <svg viewBox="0 0 80 64">
+        <rect x="4" y="6" width="72" height="52" rx="10" fill="#fffdf7" stroke="#221e33" stroke-width="4"/>
+        <rect x="4" y="6" width="72" height="13" rx="6" fill="#3ddc97" stroke="#221e33" stroke-width="4"/>
+        <rect x="14" y="28" width="24" height="20" rx="5" fill="#ffd23f" stroke="#221e33" stroke-width="3"/>
+        <path d="M46 30 H66 M46 38 H62 M46 46 H58" stroke="#8f7bff" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <b>网页</b>
+    </div>
+  </div>
+
+  <div class="tv tv-paper scroll-reveal">
+    <div class="tv-bar"><i></i><i></i><i></i><b>~/.madecoding/config.toml</b></div>
+    <pre>[model_providers.madecoding]
 base_url = "https://madeapi.com/v1"
 env_key = "MADECODING_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span></pre>
+  </div>
 
   <p>模型目录默认是空的。在网页设置里自己添加模型 ID，或向提供方拉取。需要独立 GPU 时去 <a href="/deploy">模型部署</a>。</p>
 </main>
 
-<footer class="wrap">
-  <a href="/">首页</a>
-  <a href="/install">安装</a>
-  <span class="spacer">© 2026 madecoding</span>
+<div class="ground" aria-hidden="true">
+  <span class="flower f1"></span>
+  <span class="flower f2"></span>
+  <span class="flower f3"></span>
+  <span class="flower f4"></span>
+  <span class="flower f5"></span>
+  <span class="flower f6"></span>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="/">首页</a>
+    <a href="/install">安装</a>
+    <a href="/terms">用户协议</a>
+    <span class="spacer">© 2026 madecoding</span>
+  </div>
 </footer>
 
-<script src="/site.js?v=2"></script>
+<script src="/site.js?v=3"></script>
 </body>
 </html>

@@ -6,17 +6,25 @@
 <title>安装 — madecoding</title>
 <meta name="description" content="一条命令安装 madecoding 终端界面与网页界面。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=2">
+<link rel="stylesheet" href="/styles.css?v=3">
+<script src="/boot.js?v=1"></script>
 </head>
 <body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+</div>
 
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="/">
-      <span class="mark" aria-hidden="true"></span>
+      <span class="mark" aria-hidden="true"><span class="ball"></span></span>
       madecoding
     </a>
-    <nav>
+    <nav aria-label="主导航">
       <a href="/">首页</a>
       <a href="/install" aria-current="page">安装</a>
       <a href="/deploy">模型部署</a>
@@ -26,32 +34,104 @@
   </div>
 </header>
 
-<main class="wrap page scroll-reveal">
-  <p class="kicker">Install</p>
-  <h1>一条命令，两套界面。</h1>
+<main class="wrap page">
+  <p class="kicker"><span class="ep">第 02 集</span>Install</p>
+  <h1 class="title">一条命令，两套界面。</h1>
   <p>支持 macOS 与 Linux 的 x86_64 和 arm64。程序装在 <code>~/.madecoding/bin</code>。打开新终端后运行 <code>madecoding</code>。</p>
 
-  <div class="install" style="margin-top:2rem;max-width:100%">
+  <ul class="badges" aria-label="支持平台">
+    <li>macOS</li>
+    <li>Linux</li>
+    <li>x86_64</li>
+    <li>arm64</li>
+  </ul>
+
+  <div class="install install-wide">
     <span class="prompt">$</span>
     <code id="cmd">curl -fsSL https://madecoding.com/install.sh | sh</code>
-      <button class="copy ripple-btn press" type="button" data-copy="#cmd">复制</button>
+    <button class="copy" type="button" data-copy="#cmd">复制</button>
   </div>
   <p class="hint">换目录用 <code>MADECODING_INSTALL_DIR</code>，装指定版本用 <code>--version &lt;tag&gt;</code>。</p>
 
-  <pre>madecoding                  <span class="c"># 选择终端界面或网页界面</span>
-madecoding tui              <span class="c"># 直接进终端界面</span>
-madecoding web              <span class="c"># 直接开网页界面</span>
-madecoding "修复这个测试"     <span class="c"># 带上任务直接开始</span></pre>
+  <ol class="comic">
+    <li class="panel scroll-reveal">
+      <span class="panel-no" aria-hidden="true">1</span>
+      <svg viewBox="0 0 160 100" aria-hidden="true">
+        <rect x="54" y="18" width="52" height="68" rx="9" fill="#fffdf7" stroke="#221e33" stroke-width="4"/>
+        <rect x="67" y="11" width="26" height="14" rx="5" fill="#8f7bff" stroke="#221e33" stroke-width="4"/>
+        <path d="M64 40 H96 M64 50 H90" stroke="#7fd0ff" stroke-width="4" stroke-linecap="round"/>
+        <circle class="eye" cx="72" cy="64" r="3" fill="#221e33"/>
+        <circle class="eye" cx="88" cy="64" r="3" fill="#221e33"/>
+        <path d="M75 71 Q80 75 85 71" fill="none" stroke="#221e33" stroke-width="3" stroke-linecap="round"/>
+        <path class="spark" d="M124 22 L127 31 L136 34 L127 37 L124 46 L121 37 L112 34 L121 31 Z" fill="#ffd23f" stroke="#221e33" stroke-width="2.5" stroke-linejoin="round"/>
+        <path class="spark spark-b" d="M34 58 L36 64 L42 66 L36 68 L34 74 L32 68 L26 66 L32 64 Z" fill="#ff9fcb" stroke="#221e33" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+      <p>点「复制」，拿到安装命令。</p>
+    </li>
+    <li class="panel scroll-reveal">
+      <span class="panel-no" aria-hidden="true">2</span>
+      <svg viewBox="0 0 160 100" aria-hidden="true">
+        <rect x="24" y="16" width="112" height="68" rx="11" fill="#221e33" stroke="#221e33" stroke-width="4"/>
+        <rect x="24" y="16" width="112" height="16" rx="8" fill="#8f7bff" stroke="#221e33" stroke-width="4"/>
+        <circle cx="36" cy="24" r="3" fill="#ff6b57"/>
+        <circle cx="46" cy="24" r="3" fill="#ffd23f"/>
+        <circle cx="56" cy="24" r="3" fill="#3ddc97"/>
+        <text x="34" y="54" fill="#ffd23f" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700">$ curl … | sh</text>
+        <rect class="caret" x="34" y="62" width="9" height="13" fill="#c9fbff"/>
+        <g class="enter-key">
+          <rect x="108" y="66" width="38" height="26" rx="7" fill="#ffd23f" stroke="#221e33" stroke-width="4"/>
+          <path d="M136 73 V80 H118 M122 76 L118 80 L122 84" fill="none" stroke="#221e33" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+      <p>粘贴到终端，按回车。</p>
+    </li>
+    <li class="panel scroll-reveal">
+      <span class="panel-no" aria-hidden="true">3</span>
+      <svg viewBox="0 0 160 100" aria-hidden="true">
+        <g class="mini-bot">
+          <g class="arm-wave mini-wave">
+            <path d="M98 66 Q114 60 116 44" fill="none" stroke="#221e33" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="116" cy="41" r="6" fill="#3ddc97" stroke="#221e33" stroke-width="3"/>
+          </g>
+          <rect x="62" y="62" width="36" height="28" rx="9" fill="#ffd23f" stroke="#221e33" stroke-width="4"/>
+          <rect x="50" y="22" width="60" height="46" rx="16" fill="#3ddc97" stroke="#221e33" stroke-width="4"/>
+          <rect x="58" y="30" width="44" height="30" rx="10" fill="#221e33"/>
+          <rect class="eye" x="66" y="37" width="7" height="10" rx="3.5" fill="#c9fbff"/>
+          <rect class="eye" x="87" y="37" width="7" height="10" rx="3.5" fill="#c9fbff"/>
+          <path d="M74 51 Q80 56 86 51" fill="none" stroke="#c9fbff" stroke-width="3" stroke-linecap="round"/>
+        </g>
+        <rect x="14" y="14" width="34" height="22" rx="8" fill="#fffdf7" stroke="#221e33" stroke-width="3"/>
+        <text x="20" y="30" fill="#221e33" font-family="ui-rounded, sans-serif" font-size="12" font-weight="900">Hi!</text>
+      </svg>
+      <p>运行 madecoding，选终端或网页。</p>
+    </li>
+  </ol>
+
+  <div class="tv scroll-reveal">
+    <div class="tv-bar"><i></i><i></i><i></i><b>终端</b></div>
+    <pre class="typing"><span class="ln">madecoding                  <span class="c"># 选择终端界面或网页界面</span></span><span class="ln">madecoding tui              <span class="c"># 直接进终端界面</span></span><span class="ln">madecoding web              <span class="c"># 直接开网页界面</span></span><span class="ln">madecoding "修复这个测试"     <span class="c"># 带上任务直接开始</span></span></pre>
+  </div>
 
   <p>密钥和模型在网页界面的设置里配置，终端不挡登录。下一步看 <a href="/config">配置</a>，或去 <a href="/deploy">购买独立服务器</a>。</p>
 </main>
 
-<footer class="wrap">
-  <a href="/">首页</a>
-  <a href="/config">配置</a>
-  <span class="spacer">© 2026 madecoding</span>
+<div class="ground" aria-hidden="true">
+  <span class="flower f1"></span>
+  <span class="flower f2"></span>
+  <span class="flower f3"></span>
+  <span class="flower f4"></span>
+  <span class="flower f5"></span>
+  <span class="flower f6"></span>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="/">首页</a>
+    <a href="/config">配置</a>
+    <a href="/terms">用户协议</a>
+    <span class="spacer">© 2026 madecoding</span>
+  </div>
 </footer>
 
-<script src="/site.js?v=2"></script>
+<script src="/site.js?v=3"></script>
 </body>
 </html>
