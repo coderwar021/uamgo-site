@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>madecoding — 在你自己的机器上写代码</title>
-<meta name="description" content="本地运行的 AI 编码助手。终端与网页两套界面，共用一份配置。">
+<title>madecoding — 住在你电脑里的 AI 编程搭档</title>
+<meta name="description" content="本机运行的编码智能体。能读写代码、跑命令、做计划。终端与网页两套界面，代码、会话和工作区都留在本机。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=4">
+<link rel="stylesheet" href="/styles.css?v=5">
 <script src="/boot.js?v=1"></script>
 </head>
 <body>
@@ -38,10 +38,8 @@
   <section class="hero">
     <div class="hero-copy">
       <p class="kicker"><span class="ep">第 01 集</span>Local coding agent</p>
-      <h1 class="title title-hero">模型跟着你的<br>仓库走。<em>不进云端。</em></h1>
-      <p class="lede">
-        终端与网页两套界面，共用一份配置。代码、会话和工作区都留在本机。
-      </p>
+      <h1 class="title title-hero">住在你电脑里的<br>AI 编程搭档。</h1>
+      <p class="lede">本机运行的编码智能体。能读写代码、跑命令、做计划。终端与网页两套界面，共用一份配置。</p>
       <div class="ticket">
         <div class="row"><span>安装命令</span><span>curl</span></div>
         <div class="install">
@@ -50,25 +48,43 @@
           <button class="copy" type="button" data-copy="#cmd">复制</button>
         </div>
         <p class="hint">一条命令装好两套界面。自包含程序，不需要 Node.js，也不需要编译器。</p>
+        <p class="hero-cta">
+          <a class="btn btn-sun" href="/install">安装</a>
+          <a class="btn btn-mint" href="/config">配置模型</a>
+        </p>
       </div>
     </div>
 
-    <div class="stage" aria-hidden="true">
-      <span class="sun"><span class="sun-rays"></span><span class="sun-core"><span class="sun-face"></span></span></span>
-      <span class="cloud mini m1"></span>
-      <span class="cloud mini m2"></span>
-      <span class="twinkle t1"></span>
-      <span class="twinkle t2"></span>
-      <span class="twinkle t3"></span>
-      <span class="sticker s1">&lt;/&gt;</span>
-      <span class="sticker s2">本机</span>
-      <span class="hill hill-a"></span>
-      <span class="hill hill-b"></span>
-      <span class="flower sf1"></span>
-      <span class="flower sf2"></span>
-      <span class="flower sf3"></span>
+    <div class="editor-stage" aria-hidden="true">
+      <div class="ed-win">
+        <div class="ed-bar"><i></i><i></i><i></i><b>madecoding</b><span class="ed-host">127.0.0.1</span></div>
+        <div class="ed-body">
+          <p class="ed-user">总结这个仓库并找出主要模块</p>
+          <div class="ed-tools">
+            <div class="ed-tool t-read">
+              <span class="ed-badge">读取</span>
+              README.md · packages/
+            </div>
+            <div class="ed-tool t-edit">
+              <span class="ed-badge">编辑</span>
+              core/agent-loop.ts
+              <span class="diff plus">+3</span>
+              <span class="diff minus">-1</span>
+            </div>
+            <div class="ed-tool t-run">
+              <span class="ed-badge">运行</span>
+              pnpm run test
+              <span class="ok">✓ 通过</span>
+            </div>
+          </div>
+          <p class="ed-reply">仓库有 4 个主要模块：core、client、llm、session。我可以继续按包拆给你看。</p>
+        </div>
+        <div class="ed-composer">
+          <span class="ed-type">总结这个仓库并找出主要模块</span>
+        </div>
+      </div>
       <div class="bot-wrap">
-        <p class="bubble" data-lines="代码留在你家！|终端、网页，一份配置。|一条命令就装好！|点我试试？">代码留在你家！</p>
+        <p class="bubble" data-lines="代码留在你家！|选工作区，发第一个任务。|终端、网页，一份配置。|点我试试？">代码留在你家！</p>
         <svg class="bot" viewBox="0 0 200 230">
           <g class="arm-left">
             <path d="M60 172 Q32 180 28 204" fill="none" stroke="#221e33" stroke-width="8" stroke-linecap="round"/>
@@ -102,42 +118,186 @@
     </div>
   </section>
 
-  <section class="services">
-    <a class="service tone-sun scroll-reveal" href="/install">
-      <span class="service-art" aria-hidden="true">
-        <svg viewBox="0 0 120 100">
-          <g class="drop-arrow">
-            <path d="M60 4 V26 M50 17 L60 27 L70 17" fill="none" stroke="#221e33" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <section class="faces">
+    <h2 class="section-title scroll-reveal">两套界面，一份配置。</h2>
+    <p class="section-lede scroll-reveal">装完运行 <code>madecoding</code>，自己选终端或网页。两套界面读同一份 <code>~/.madecoding/config.toml</code>。</p>
+    <div class="faces-grid">
+      <article class="face-card tone-ink scroll-reveal">
+        <span class="face-cmd">madecoding tui</span>
+        <div class="tv tv-mini">
+          <div class="tv-bar"><i></i><i></i><i></i><b>终端</b></div>
+          <pre class="typing"><span class="ln">$ madecoding tui</span><span class="ln">▸ 选择工作区</span><span class="ln">> 总结这个仓库</span><span class="ln">  读取 README.md …</span></pre>
+        </div>
+        <h3>终端界面</h3>
+        <p>在你已经打开的终端里写代码、跑命令。</p>
+      </article>
+      <div class="faces-mid" aria-hidden="true">
+        <span class="wire"></span>
+        <span class="cfg-pill">config.toml</span>
+        <span class="wire wire-rev"></span>
+      </div>
+      <article class="face-card tone-sky scroll-reveal">
+        <span class="face-cmd">madecoding web</span>
+        <div class="web-mock">
+          <div class="web-bar"><i></i><i></i><i></i><b>127.0.0.1:3080</b></div>
+          <div class="web-body">
+            <aside>
+              <b>工作区</b>
+              <span>my-app</span>
+              <b>会话</b>
+              <span>总结仓库</span>
+            </aside>
+            <div class="web-chat">
+              <span class="web-bubble you">总结这个仓库</span>
+              <span class="web-bubble bot">4 个主要模块</span>
+            </div>
+          </div>
+        </div>
+        <h3>网页界面</h3>
+        <p>本机启动，浏览器打开。通过 SSH 时只打印宿主机地址。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="can">
+    <h2 class="section-title scroll-reveal">它能做什么。</h2>
+    <p class="section-lede scroll-reveal">Agent 可以读取和编辑工作区文件、运行命令、委派工作并维护计划。需要审批的操作会先问你。</p>
+    <div class="can-grid">
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <rect x="12" y="10" width="96" height="68" rx="12" fill="#fffdf7" stroke="#221e33" stroke-width="5"/>
+            <path d="M28 32 H78 M28 46 H92 M28 60 H64" stroke="#8f7bff" stroke-width="5" stroke-linecap="round"/>
+            <rect class="scan" x="18" y="18" width="84" height="8" rx="4" fill="#3ddc97"/>
+          </svg>
+        </span>
+        <h3>读写代码</h3>
+        <p>读取并编辑工作区文件。</p>
+      </article>
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <rect x="10" y="14" width="100" height="60" rx="12" fill="#221e33" stroke="#221e33" stroke-width="5"/>
+            <text x="22" y="50" fill="#c9fbff" font-size="16" font-family="ui-monospace,monospace" font-weight="700">$ test</text>
+            <circle class="ok-pop" cx="96" cy="28" r="10" fill="#3ddc97" stroke="#221e33" stroke-width="4"/>
+          </svg>
+        </span>
+        <h3>运行命令</h3>
+        <p>在你的项目里执行。</p>
+      </article>
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <rect x="16" y="12" width="88" height="18" rx="9" fill="#ffd23f" stroke="#221e33" stroke-width="4"/>
+            <rect class="plan-b" x="16" y="36" width="88" height="18" rx="9" fill="#c9beff" stroke="#221e33" stroke-width="4"/>
+            <rect class="plan-c" x="16" y="60" width="88" height="18" rx="9" fill="#a8f0cf" stroke="#221e33" stroke-width="4"/>
+          </svg>
+        </span>
+        <h3>计划任务</h3>
+        <p>先列计划再动手。</p>
+      </article>
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <circle cx="38" cy="44" r="18" fill="#3ddc97" stroke="#221e33" stroke-width="5"/>
+            <circle class="mini-bot" cx="86" cy="30" r="12" fill="#ffd23f" stroke="#221e33" stroke-width="4"/>
+            <circle class="mini-bot" cx="90" cy="62" r="12" fill="#ff9fcb" stroke="#221e33" stroke-width="4"/>
+            <path d="M54 40 L70 32 M56 50 L74 60" stroke="#221e33" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <h3>委派工作</h3>
+        <p>把子任务交给子智能体。</p>
+      </article>
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <rect x="18" y="16" width="84" height="56" rx="14" fill="#fffdf7" stroke="#221e33" stroke-width="5"/>
+            <path d="M36 44 Q48 28 60 44 Q72 60 84 44" fill="none" stroke="#221e33" stroke-width="5" stroke-linecap="round"/>
+            <circle class="hand" cx="60" cy="44" r="8" fill="#ff6b57" stroke="#221e33" stroke-width="4"/>
+          </svg>
+        </span>
+        <h3>你说了算</h3>
+        <p>需要审批的操作会先问你。</p>
+      </article>
+      <article class="can-card scroll-reveal">
+        <span class="can-art" aria-hidden="true">
+          <svg viewBox="0 0 120 88">
+            <rect x="14" y="18" width="92" height="52" rx="14" fill="#c9beff" stroke="#221e33" stroke-width="5"/>
+            <circle cx="42" cy="44" r="12" fill="#ffd23f" stroke="#221e33" stroke-width="4"/>
+            <circle class="orbit" cx="78" cy="44" r="12" fill="#3ddc97" stroke="#221e33" stroke-width="4"/>
+          </svg>
+        </span>
+        <h3>任意模型</h3>
+        <p>Uamgo 或自定义的 OpenAI 兼容端点。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="start">
+    <h2 class="section-title scroll-reveal">三步上手。</h2>
+    <ol class="comic">
+      <li class="panel scroll-reveal">
+        <a href="/install">
+          <span class="panel-no">1</span>
+          <svg viewBox="0 0 160 100">
+            <g class="drop-arrow">
+              <path d="M80 8 V30 M70 21 L80 31 L90 21" fill="none" stroke="#221e33" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+            <path d="M42 48 L80 36 L118 48 L80 60 Z" fill="#ffd9a8" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M42 48 V82 L80 94 V60 Z" fill="#ffa94d" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M118 48 V82 L80 94 V60 Z" fill="#ff8f3a" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+          </svg>
+          <p>装好。一条命令，打开安装页。</p>
+        </a>
+      </li>
+      <li class="panel scroll-reveal">
+        <a href="/config">
+          <span class="panel-no">2</span>
+          <svg viewBox="0 0 160 100">
+            <path d="M40 12 H96 L114 30 V88 H40 Z" fill="#fffdf7" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M96 12 V30 H114" fill="#e9f8ff" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
+            <path d="M52 42 H96 M52 56 H108" stroke="#8f7bff" stroke-width="5" stroke-linecap="round"/>
+            <circle class="spark" cx="128" cy="28" r="8" fill="#ffd23f" stroke="#221e33" stroke-width="3"/>
+          </svg>
+          <p>配模型。设置 → 模型，填入密钥。</p>
+        </a>
+      </li>
+      <li class="panel scroll-reveal">
+        <span class="panel-no">3</span>
+        <svg viewBox="0 0 160 100">
+          <rect x="22" y="16" width="116" height="68" rx="14" fill="#fffdf7" stroke="#221e33" stroke-width="5"/>
+          <rect x="34" y="28" width="52" height="10" rx="5" fill="#c9beff"/>
+          <rect x="34" y="46" width="92" height="24" rx="8" fill="#d8f2ff" stroke="#221e33" stroke-width="3"/>
+          <g class="mini-bot">
+            <circle cx="122" cy="32" r="12" fill="#3ddc97" stroke="#221e33" stroke-width="4"/>
+            <rect x="116" y="28" width="4" height="6" rx="2" fill="#c9fbff"/>
+            <rect x="124" y="28" width="4" height="6" rx="2" fill="#c9fbff"/>
           </g>
-          <path d="M22 44 L60 32 L98 44 L60 56 Z" fill="#ffd9a8" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M22 44 V82 L60 94 V56 Z" fill="#ffa94d" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M98 44 V82 L60 94 V56 Z" fill="#ff8f3a" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
-          <circle cx="34" cy="66" r="3.5" fill="#221e33"/>
-          <circle cx="48" cy="70" r="3.5" fill="#221e33"/>
-          <path d="M34 77 Q41 83 48 80" fill="none" stroke="#221e33" stroke-width="3.5" stroke-linecap="round"/>
         </svg>
-      </span>
-      <h2>安装</h2>
-      <p>macOS 与 Linux，x86_64 和 arm64。装完运行 madecoding，自己选终端或网页。</p>
-      <span class="go">打开安装页 →</span>
-    </a>
-    <a class="service tone-mint scroll-reveal" href="/config">
-      <span class="service-art" aria-hidden="true">
-        <svg viewBox="0 0 120 100">
-          <path d="M30 8 H76 L94 26 V92 H30 Z" fill="#fffdf7" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M76 8 V26 H94" fill="#e9f8ff" stroke="#221e33" stroke-width="5" stroke-linejoin="round"/>
-          <path d="M40 34 H70 M40 46 H82 M40 58 H64" stroke="#8f7bff" stroke-width="5" stroke-linecap="round"/>
-          <circle class="eye" cx="50" cy="73" r="3.5" fill="#221e33"/>
-          <circle class="eye" cx="72" cy="73" r="3.5" fill="#221e33"/>
-          <path d="M54 81 Q61 87 68 81" fill="none" stroke="#221e33" stroke-width="3.5" stroke-linecap="round"/>
-          <ellipse cx="42" cy="81" rx="5" ry="3" fill="#ff9fcb"/>
-          <ellipse cx="80" cy="81" rx="5" ry="3" fill="#ff9fcb"/>
-        </svg>
-      </span>
-      <h2>配置</h2>
-      <p>两套界面读同一份 ~/.madecoding/config.toml。密钥只写环境变量名。</p>
-      <span class="go">打开配置页 →</span>
-    </a>
+        <p>选工作区，发出第一个任务。</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="home-banner scroll-reveal">
+    <h2>代码留在你家。</h2>
+    <ul>
+      <li>本机 <code>127.0.0.1</code> 运行</li>
+      <li>代码、会话和工作区都不上传</li>
+      <li>密钥只记环境变量名</li>
+    </ul>
+  </section>
+
+  <section class="close-cta">
+    <h2 class="section-title scroll-reveal">现在装一份。</h2>
+    <div class="ticket ticket-wide">
+      <div class="row"><span>安装命令</span><span>curl</span></div>
+      <div class="install">
+        <span class="prompt">$</span>
+        <code id="cmd-end">curl -fsSL https://madecoding.com/install.sh | sh</code>
+        <button class="copy" type="button" data-copy="#cmd-end">复制</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -158,6 +318,6 @@
   </div>
 </footer>
 
-<script src="/site.js?v=4"></script>
+<script src="/site.js?v=5"></script>
 </body>
 </html>

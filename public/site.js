@@ -132,7 +132,7 @@ const reveal = new IntersectionObserver((entries) => {
     entry.target.classList.add('in')
     reveal.unobserve(entry.target)
   }
-}, { threshold: 0.18 })
+}, { threshold: 0.05, rootMargin: '0px 0px -10% 0px' })
 for (const node of document.querySelectorAll('.scroll-reveal')) reveal.observe(node)
 
 document.addEventListener('click', (event) => {
