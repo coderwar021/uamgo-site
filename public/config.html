@@ -6,7 +6,7 @@
 <title>配置 — madecoding</title>
 <meta name="description" content="终端与网页共用 ~/.madecoding/config.toml。密钥在 madeapi.com/keys。">
 <link rel="icon" href="/favicon.svg">
-<link rel="stylesheet" href="/styles.css?v=3">
+<link rel="stylesheet" href="/styles.css?v=4">
 <script src="/boot.js?v=1"></script>
 </head>
 <body>
@@ -27,15 +27,15 @@
     <nav aria-label="主导航">
       <a href="/">首页</a>
       <a href="/install">安装</a>
-      <a href="/deploy">模型部署</a>
       <a href="/config" aria-current="page">配置</a>
       <a href="/terms">协议</a>
     </nav>
+    <a class="nav-deploy" href="/deploy">模型部署</a>
   </div>
 </header>
 
 <main class="wrap page">
-  <p class="kicker"><span class="ep">第 04 集</span>Config</p>
+  <p class="kicker"><span class="ep">第 03 集</span>Config</p>
   <h1 class="title">配一次，终端和网页一起用。</h1>
   <p>
     两套界面读同一份 <code>~/.madecoding/config.toml</code>。密钥到
@@ -83,7 +83,7 @@ base_url = "https://madeapi.com/v1"
 env_key = "MADECODING_API_KEY"      <span class="c"># 只记变量名，密钥不写进配置</span></pre>
   </div>
 
-  <p>模型目录默认是空的。在网页设置里自己添加模型 ID，或向提供方拉取。需要独立 GPU 时去 <a href="/deploy">模型部署</a>。</p>
+  <p>模型目录默认是空的。在网页设置里自己添加模型 ID，或向提供方拉取。</p>
 </main>
 
 <div class="ground" aria-hidden="true">
@@ -103,6 +103,6 @@ env_key = "MADECODING_API_KEY"      <span class="c"># 只记变量名，密钥�
   </div>
 </footer>
 
-<script src="/site.js?v=3"></script>
+<script src="/site.js?v=4"></script>
 </body>
 </html>

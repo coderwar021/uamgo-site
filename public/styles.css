@@ -156,6 +156,30 @@ nav a[aria-current='page'] {
   background: var(--sun);
   box-shadow: 3px 3px 0 var(--ink);
 }
+.nav-deploy {
+  position: relative;
+  flex: none;
+  margin-left: 0.9rem;
+  padding: 0.38rem 1rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 999px;
+  background: #c9beff;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: transform 0.25s var(--boing), box-shadow 0.15s;
+}
+.nav-deploy::before {
+  content: '';
+  position: absolute;
+  left: -0.95rem;
+  top: 15%;
+  height: 70%;
+  border-left: var(--stroke) dashed rgb(34 30 51 / 0.35);
+}
+.nav-deploy:hover { transform: translateY(-3px) rotate(-2deg); box-shadow: 5px 6px 0 var(--ink); }
+.nav-deploy[aria-current='page'] { background: var(--grape); color: #fff; }
 .account-open {
   flex: none;
   max-width: 12rem;
@@ -178,7 +202,8 @@ nav a[aria-current='page'] {
 @media (max-width: 46rem) {
   .site-header .wrap { flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
   nav { order: 3; width: 100%; margin-left: 0; overflow-x: auto; padding-bottom: 0.35rem; }
-  .account-open { margin-left: auto; }
+  .nav-deploy { margin-left: auto; }
+  .nav-deploy::before { display: none; }
 }
 
 /* ---------- Titles ---------- */
@@ -461,7 +486,8 @@ nav a[aria-current='page'] {
 
 .services {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 52rem;
   gap: 1.8rem;
   margin: 1.5rem 0 4rem;
 }
