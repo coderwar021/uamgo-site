@@ -3,7 +3,16 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { assertProductionStoreKey, loadStore, saveStore, sessionForEmail, userForToken } from '../accounts.mjs'
+import {
+  assertPersistentStore,
+  assertProductionStoreKey,
+  isProduction,
+  loadStore,
+  resolveDatabasePath,
+  saveStore,
+  sessionForEmail,
+  userForToken,
+} from '../accounts.mjs'
 import {
   checkoutAllowed,
   clientIp,
@@ -92,6 +101,36 @@ test('production refuses to start without STORE_KEY', () => {
       else process.env.STORE_KEY_BASE64 = b64
     }
   })
+
+test('a Railway deployment counts as production without NODE_ENV', () => {
+  assert.equal(isProduction({}), false)
+  assert.equal(isProduction({ NODE_ENV: 'production' }), true)
+  assert.equal(isProduction({ RAILWAY_ENVIRONMENT_NAME: 'production' }), true)
+})
+
+test('the account file lives on the Railway volume', () => {
+  assert.equal(resolveDatabasePath({ RAILWAY_VOLUME_MOUNT_PATH: '/app/data' }, '/tmp/x.json'), '/app/data/store.json')
+  assert.equal(
+    resolveDatabasePath({ DATABASE_PATH: '/srv/a.json', RAILWAY_VOLUME_MOUNT_PATH: '/app/data' }, '/tmp/x.json'),
+    '/srv/a.json',
+  )
+  assert.equal(resolveDatabasePath({}, '/tmp/x.json'), '/tmp/x.json')
+})
+
+test('Railway refuses to start when account data would be lost on redeploy', () => {
+  const railway = { RAILWAY_ENVIRONMENT_NAME: 'production' }
+  assert.throws(() => assertPersistentStore(railway, '/app/data/store.json'), /volume required/)
+  assert.throws(
+    () => assertPersistentStore({ ...railway, RAILWAY_VOLUME_MOUNT_PATH: '/app/data' }, '/app/store.json'),
+    /outside the Railway volume/,
+  )
+  assert.throws(
+    () => assertPersistentStore({ ...railway, RAILWAY_VOLUME_MOUNT_PATH: '/app/data' }, '/app/database/store.json'),
+    /outside the Railway volume/,
+  )
+  assertPersistentStore({ ...railway, RAILWAY_VOLUME_MOUNT_PATH: '/app/data' }, '/app/data/store.json')
+  assertPersistentStore({}, '/tmp/store.json')
+})
 
 test('STORE_KEY encrypts the account file', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'store-enc-'))

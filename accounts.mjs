@@ -8,7 +8,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join, resolve, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { sha256Hex } from './security.mjs'
 
@@ -65,11 +65,51 @@ export function storeKey() {
 }
 
 /**
+ * Railway injects RAILWAY_ENVIRONMENT_NAME into every deployment, so production
+ * checks hold there even when NODE_ENV is unset.
+ * @param env - process environment.
+ * @returns whether the process runs as a production deployment.
+ */
+export function isProduction(env = process.env) {
+  return env.NODE_ENV === 'production' || env.RAILWAY_ENVIRONMENT_NAME !== undefined
+}
+
+/**
  * Production must encrypt the account file. Tests leave STORE_KEY unset.
  */
 export function assertProductionStoreKey() {
-  if (process.env.NODE_ENV === 'production' && storeKey() === undefined) {
+  if (isProduction() && storeKey() === undefined) {
     throw new Error('STORE_KEY required in production')
+  }
+}
+
+/**
+ * Pick the account file. DATABASE_PATH wins; otherwise an attached Railway
+ * volume holds `store.json` at its mount; otherwise `fallback`.
+ * @param env - process environment.
+ * @param fallback - path used when neither DATABASE_PATH nor a volume is set.
+ * @returns the absolute store path.
+ */
+export function resolveDatabasePath(env, fallback) {
+  if (env.DATABASE_PATH) return resolve(env.DATABASE_PATH)
+  if (env.RAILWAY_VOLUME_MOUNT_PATH) return join(resolve(env.RAILWAY_VOLUME_MOUNT_PATH), 'store.json')
+  return resolve(fallback)
+}
+
+/**
+ * Railway replaces the container filesystem on every deploy, so a deployment
+ * there must keep the store inside its attached volume.
+ * @param env - process environment.
+ * @param path - absolute store path from resolveDatabasePath.
+ */
+export function assertPersistentStore(env, path) {
+  if (env.RAILWAY_ENVIRONMENT_NAME === undefined) return
+  if (!env.RAILWAY_VOLUME_MOUNT_PATH) {
+    throw new Error('Railway volume required: attach one so redeploys keep account data')
+  }
+  const mount = resolve(env.RAILWAY_VOLUME_MOUNT_PATH)
+  if (!path.startsWith(mount + sep)) {
+    throw new Error(`DATABASE_PATH ${path} is outside the Railway volume ${mount}`)
   }
 }
 

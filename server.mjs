@@ -5,6 +5,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
+  assertPersistentStore,
   assertProductionStoreKey,
   cookieValue,
   csrfCookie,
@@ -12,6 +13,7 @@ import {
   csrfOk,
   loadStore,
   namedCookie,
+  resolveDatabasePath,
   saveStore,
   sessionCookie,
   sessionForEmail,
@@ -56,7 +58,7 @@ import {
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
-const DB = process.env.DATABASE_PATH ?? resolve(fileURLToPath(new URL('./data/store.json', import.meta.url)))
+const DB = resolveDatabasePath(process.env, fileURLToPath(new URL('./data/store.json', import.meta.url)))
 
 const TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -548,6 +550,7 @@ const server = createServer((request, response) => {
 const inTest = process.env.NODE_TEST_CONTEXT !== undefined
 if (!inTest) {
   assertProductionStoreKey()
+  assertPersistentStore(process.env, DB)
   server.listen(PORT, '0.0.0.0', () => {
     process.stdout.write(`madecoding.com listening on :${PORT}\n`)
   })
