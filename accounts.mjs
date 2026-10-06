@@ -16,19 +16,23 @@ const scryptAsync = promisify(scrypt)
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u
 export const SESSION_AGE = 60 * 60 * 12
+export const SESSION_IDLE = 60 * 60 * 2
+export const SESSION_CAP = 5
 
 /**
  * @param {string} path
  * @returns {Promise<object>}
  */
 export async function loadStore(path) {
+  let raw
   try {
-    const raw = await readFile(path)
-    const parsed = JSON.parse(decodeStore(raw))
-    return normalizeStore(parsed)
-  } catch {
-    return emptyStore()
+    raw = await readFile(path)
+  } catch (error) {
+    if (error.code === 'ENOENT') return emptyStore()
+    throw error
   }
+  const parsed = JSON.parse(decodeStore(raw))
+  return normalizeStore(parsed)
 }
 
 function emptyStore() {
@@ -113,18 +117,58 @@ export function assertPersistentStore(env, path) {
   }
 }
 
-function decodeStore(raw) {
-  const text = raw.toString('utf8')
-  if (!text.startsWith('enc.v1.')) return text
-  const key = storeKey()
-  if (key === undefined) throw new Error('STORE_KEY required to read encrypted store')
-  const blob = Buffer.from(text.slice('enc.v1.'.length), 'base64')
+function previousKey() {
+  const hex = process.env.STORE_KEY_PREVIOUS ?? ''
+  if (/^[0-9a-f]{64}$/iu.test(hex)) return Buffer.from(hex, 'hex')
+  return undefined
+}
+
+function keysToTry() {
+  return [storeKey(), previousKey()].filter((key) => key !== undefined)
+}
+
+function keyId(key) {
+  return createHash('sha256').update(key).digest('hex').slice(0, 8)
+}
+
+function decryptBlob(key, blob) {
   const iv = blob.subarray(0, 12)
   const tag = blob.subarray(12, 28)
   const data = blob.subarray(28)
   const decipher = createDecipheriv('aes-256-gcm', key, iv)
   decipher.setAuthTag(tag)
   return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8')
+}
+
+function decodeStore(raw) {
+  const text = raw.toString('utf8')
+  const keys = keysToTry()
+  if (text.startsWith('enc.v2.')) {
+    const rest = text.slice('enc.v2.'.length).trim()
+    const dot = rest.indexOf('.')
+    if (dot < 0) throw new Error('store_corrupt')
+    const blob = Buffer.from(rest.slice(dot + 1), 'base64')
+    for (const key of keys) {
+      try {
+        return decryptBlob(key, blob)
+      } catch {
+        // Wrong key or tag; try the rest of the ring.
+      }
+    }
+    throw new Error('store_decrypt')
+  }
+  if (text.startsWith('enc.v1.')) {
+    const blob = Buffer.from(text.slice('enc.v1.'.length).trim(), 'base64')
+    for (const key of keys) {
+      try {
+        return decryptBlob(key, blob)
+      } catch {
+        // Wrong key or tag; try the rest of the ring.
+      }
+    }
+    throw new Error('store_decrypt')
+  }
+  return text
 }
 
 function encodeStore(json) {
@@ -134,7 +178,7 @@ function encodeStore(json) {
   const cipher = createCipheriv('aes-256-gcm', key, iv)
   const encrypted = Buffer.concat([cipher.update(json, 'utf8'), cipher.final()])
   const tag = cipher.getAuthTag()
-  return `enc.v1.${Buffer.concat([iv, tag, encrypted]).toString('base64')}\n`
+  return `enc.v2.${keyId(key)}.${Buffer.concat([iv, tag, encrypted]).toString('base64')}\n`
 }
 
 /**
@@ -142,6 +186,7 @@ function encodeStore(json) {
  * @param {object} data
  */
 export async function saveStore(path, data) {
+  purgeExpired(data)
   await mkdir(dirname(path), { recursive: true })
   const body = encodeStore(`${JSON.stringify(data, null, 2)}\n`)
   const tmp = `${path}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`
@@ -223,11 +268,18 @@ function issueSession(store, user) {
   const token = randomBytes(32).toString('base64url')
   const csrf = randomBytes(32).toString('base64url')
   const now = Date.now()
+  const mine = store.sessions.filter((row) => row.user_id === user.id)
+    .sort((a, b) => a.created_at - b.created_at)
+  while (mine.length >= SESSION_CAP) {
+    const oldest = mine.shift()
+    store.sessions = store.sessions.filter((row) => row !== oldest)
+  }
   store.sessions.push({
     token_hash: sha256Hex(token),
     csrf_hash: sha256Hex(csrf),
     user_id: user.id,
     created_at: now,
+    seen_at: now,
     expires_at: now + SESSION_AGE * 1000,
   })
   return { token, csrf, email: user.email }
@@ -236,7 +288,9 @@ function issueSession(store, user) {
 function purgeExpired(store) {
   const now = Date.now()
   store.sessions = store.sessions.filter((row) => {
-    if (typeof row.expires_at === 'number') return row.expires_at > now
+    if (typeof row.expires_at === 'number' && row.expires_at <= now) return false
+    const seen = typeof row.seen_at === 'number' ? row.seen_at : row.created_at
+    if (typeof seen === 'number' && now - seen > SESSION_IDLE * 1000) return false
     return true
   })
 }
@@ -266,6 +320,7 @@ export function userForToken(store, token) {
   const digest = sha256Hex(token)
   const session = store.sessions.find((row) => row.token_hash === digest)
   if (session === undefined) return undefined
+  session.seen_at = Date.now()
   return store.users.find((user) => user.id === session.user_id)
 }
 

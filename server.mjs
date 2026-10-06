@@ -37,6 +37,7 @@ import {
   lockResponse,
   originAllowed,
   rateOk,
+  accountOrderOk,
   readLimited,
   safeEqual,
   sha256Hex,
@@ -55,6 +56,7 @@ import {
   fetchRentalPlans,
   forwardWaffoWebhook,
 } from './rental.mjs'
+import { audit } from './audit.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
@@ -158,6 +160,7 @@ function requireCsrf(request, store) {
 }
 
 function tooMany(response) {
+  audit('rate', {})
   sendJson(response, 429, { error: 'rate' }, { 'retry-after': '60' })
 }
 
@@ -212,6 +215,11 @@ async function handleApi(request, response) {
   const url = new URL(request.url ?? '/', 'http://localhost')
   const method = request.method ?? 'GET'
 
+  if (method === 'GET' && url.pathname === '/healthz') {
+    sendJson(response, 200, { ok: true })
+    return true
+  }
+
   if (method === 'POST' && url.pathname === '/webhooks/waffo') {
     if (!rateOk(request, 'webhook')) {
       tooMany(response)
@@ -232,6 +240,7 @@ async function handleApi(request, response) {
     try {
       event = verifyWaffoWebhook(raw, typeof signature === 'string' ? signature : undefined)
     } catch {
+      audit('webhook', { status: 401 })
       sendJson(response, 401, { error: 'signature' })
       return true
     }
@@ -248,6 +257,7 @@ async function handleApi(request, response) {
       await saveStore(DB, store)
     }
     void forwardWaffoWebhook(raw, typeof signature === 'string' ? signature : undefined).catch(() => undefined)
+    audit('webhook', { status: 200 })
     sendJson(response, 200, { ok: true })
     return true
   }
@@ -255,6 +265,7 @@ async function handleApi(request, response) {
   if (method === 'GET' && url.pathname === '/auth/me') {
     const store = await loadStore(DB)
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
+    if (user !== undefined) await saveStore(DB, store)
     sendJson(response, 200, { email: user?.email ?? null })
     return true
   }
@@ -340,6 +351,7 @@ async function handleApi(request, response) {
     const store = await loadStore(DB)
     const result = sessionForEmail(store, email)
     await saveStore(DB, store)
+    audit('login', { email })
     response.writeHead(302, {
       location: '/',
       'cache-control': 'no-store',
@@ -366,6 +378,7 @@ async function handleApi(request, response) {
     const digest = sha256Hex(token)
     store.sessions = store.sessions.filter((row) => row.token_hash !== digest)
     await saveStore(DB, store)
+    audit('logout', {})
     sendJson(response, 200, { email: null }, { 'set-cookie': clearSessionCookies(request) })
     return true
   }
@@ -391,12 +404,19 @@ async function handleApi(request, response) {
     }
     const store = await loadStore(DB)
     if (!requireCsrf(request, store)) {
+      audit('authz', { path: '/orders', status: 403 })
       sendJson(response, 403, { error: 'csrf' })
       return true
     }
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
+      audit('authz', { path: '/orders', status: 401 })
       sendJson(response, 401, { error: 'auth', message: '请先点右上角登录。' })
+      return true
+    }
+    if (!accountOrderOk(user.id)) {
+      audit('abuse', { path: '/orders', status: 429 })
+      tooMany(response)
       return true
     }
     if (!paymentsReady()) {
@@ -472,6 +492,7 @@ async function handleApi(request, response) {
     }
     store.orders.push(order)
     await saveStore(DB, store)
+    audit('order', { order_id: order.id, user_id: user.id })
     void ensureHttpWebhook().catch(() => undefined)
     sendJson(response, 201, publicOrder(order))
     return true
@@ -486,6 +507,7 @@ async function handleApi(request, response) {
     const store = await loadStore(DB)
     const user = userForToken(store, sessionFromCookie(request.headers.cookie))
     if (user === undefined) {
+      audit('authz', { path: '/orders', status: 401 })
       sendJson(response, 401, { error: 'auth' })
       return true
     }

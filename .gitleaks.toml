@@ -1,0 +1,4 @@
+title = "gitleaks"
+[allowlist]
+paths = ['''tests/''']
+description = "Fixtures use dummy STORE_KEY hex"

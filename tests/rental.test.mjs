@@ -40,7 +40,7 @@ test('without RENTAL_SITE_KEY the site does not call the gateway', async () => {
   }
 })
 
-test('createRentalOrder posts the site uuid with X-Site-Key', async () => {
+test('createRentalOrder posts the site uuid with HMAC headers', async () => {
   process.env.RENTAL_SITE_KEY = 'shared'
   process.env.RENTAL_ORIGIN = 'https://gateway.madecoding.com'
   const id = '550e8400-e29b-41d4-a716-446655440000'
@@ -52,7 +52,8 @@ test('createRentalOrder posts the site uuid with X-Site-Key', async () => {
   try {
     assert.equal(await createRentalOrder({ id, user_id: 'u1', plan_id: 'group5', hours: 2 }, fetchImpl), id)
     assert.equal(seen.url, 'https://gateway.madecoding.com/orders')
-    assert.equal(seen.headers['x-site-key'], 'shared')
+    assert.equal(typeof seen.headers['x-site-signature'], 'string')
+    assert.equal(seen.headers['x-site-key'], undefined)
     assert.equal(seen.body.id, id)
     assert.equal(seen.body.hours, 2)
   } finally {

@@ -2,6 +2,8 @@
  * GPU gateway at gateway.madecoding.com. Humans never talk to it; the site does.
  */
 
+import { signSiteRequest, siteKeys } from './site-sign.mjs'
+
 const DEFAULT_ORIGIN = 'https://gateway.madecoding.com'
 
 /**
@@ -13,16 +15,16 @@ export function rentalOrigin() {
 }
 
 /**
- * Mutating and credential reads need the shared site key.
+ * Mutating and credential reads need the HMAC site key.
  */
 export function rentalReady() {
-  return (process.env.RENTAL_SITE_KEY ?? '').length > 0
+  return siteKeys().length > 0
 }
 
-function siteHeaders() {
+function signedHeaders(method, path, body = '') {
   return {
     'content-type': 'application/json',
-    'x-site-key': process.env.RENTAL_SITE_KEY ?? '',
+    ...signSiteRequest({ method, path, body, key: siteKeys()[0] }),
   }
 }
 
@@ -33,19 +35,20 @@ function siteHeaders() {
  */
 export async function createRentalOrder(order, fetchImpl = fetch) {
   if (!rentalReady()) return order.id
+  const body = JSON.stringify({
+    id: order.id,
+    user_id: order.user_id,
+    plan_id: order.plan_id,
+    hours: order.hours,
+  })
   const response = await fetchImpl(`${rentalOrigin()}/orders`, {
     method: 'POST',
-    headers: siteHeaders(),
-    body: JSON.stringify({
-      id: order.id,
-      user_id: order.user_id,
-      plan_id: order.plan_id,
-      hours: order.hours,
-    }),
+    headers: signedHeaders('POST', '/orders', body),
+    body,
   })
   if (!response.ok) throw new Error(`rental_order_${response.status}`)
-  const body = await response.json().catch(() => ({}))
-  return typeof body.order_id === 'string' ? body.order_id : order.id
+  const payload = await response.json().catch(() => ({}))
+  return typeof payload.order_id === 'string' ? payload.order_id : order.id
 }
 
 /**
@@ -56,13 +59,15 @@ export async function createRentalOrder(order, fetchImpl = fetch) {
  */
 export async function forwardWaffoWebhook(raw, signature, fetchImpl = fetch) {
   if (!rentalReady()) return
+  const body = typeof raw === 'string' ? raw : Buffer.from(raw).toString('utf8')
   await fetchImpl(`${rentalOrigin()}/webhooks/waffo`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       'x-waffo-signature': typeof signature === 'string' ? signature : '',
+      ...signedHeaders('POST', '/webhooks/waffo', body),
     },
-    body: raw,
+    body,
   })
 }
 
@@ -72,8 +77,9 @@ export async function forwardWaffoWebhook(raw, signature, fetchImpl = fetch) {
  */
 export async function fetchRentalOrder(id, fetchImpl = fetch) {
   if (!rentalReady()) return undefined
-  const response = await fetchImpl(`${rentalOrigin()}/orders/${id}`, {
-    headers: { 'x-site-key': process.env.RENTAL_SITE_KEY ?? '' },
+  const path = `/orders/${id}`
+  const response = await fetchImpl(`${rentalOrigin()}${path}`, {
+    headers: signedHeaders('GET', path, ''),
   })
   if (!response.ok) return undefined
   return response.json()

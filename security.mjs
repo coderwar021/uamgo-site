@@ -1,3 +1,4 @@
+import { isCloudflareIp } from './cloudflare-ips.mjs'
 import { createHash, timingSafeEqual } from 'node:crypto'
 
 /**
@@ -13,6 +14,7 @@ export const CANONICAL_ORIGIN = canonicalOrigin()
 const AUTH_LIMIT = createLimiter(60_000, 20)
 const ORDER_LIMIT = createLimiter(60_000, 30)
 const WEBHOOK_LIMIT = createLimiter(60_000, 120)
+const ACCOUNT_ORDER_LIMIT = createLimiter(3_600_000, 8)
 
 /**
  * @param windowMs window
@@ -60,17 +62,19 @@ export function safeEqual(left, right) {
 }
 
 /**
- * Client IP. Prefer Cloudflare / Railway headers the proxy overwrites.
+ * Client IP. Trust cf-connecting-ip only when the connecting hop is Cloudflare.
  * Ignore X-Forwarded-For: a browser can set it and skip the rate limiter.
  * @param request incoming
  * @returns ip
  */
 export function clientIp(request) {
+  const realHeader = request.headers['x-real-ip']
+  const hop = typeof realHeader === 'string' && realHeader.length > 0
+    ? realHeader.trim()
+    : (request.socket?.remoteAddress ?? '0.0.0.0')
   const cf = request.headers['cf-connecting-ip']
-  if (typeof cf === 'string' && cf.length > 0) return cf.trim()
-  const real = request.headers['x-real-ip']
-  if (typeof real === 'string' && real.length > 0) return real.trim()
-  return request.socket?.remoteAddress ?? '0.0.0.0'
+  if (typeof cf === 'string' && cf.length > 0 && isCloudflareIp(hop)) return cf.trim()
+  return hop
 }
 
 /**
@@ -83,6 +87,14 @@ export function rateOk(request, kind) {
   if (kind === 'auth') return AUTH_LIMIT(ip)
   if (kind === 'order') return ORDER_LIMIT(ip)
   return WEBHOOK_LIMIT(ip)
+}
+
+/**
+ * @param userId account id
+ * @returns whether this account is under the hourly order cap
+ */
+export function accountOrderOk(userId) {
+  return ACCOUNT_ORDER_LIMIT(userId)
 }
 
 /**
