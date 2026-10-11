@@ -237,6 +237,12 @@ export async function verifyPassword(password, stored) {
   return actual.length === expected.length && timingSafeEqual(actual, expected)
 }
 
+const DUMMY_PASSWORD = { salt: '00'.repeat(16), hash: '00'.repeat(32) }
+
+function hasPassword(user) {
+  return typeof user?.salt === 'string' && typeof user?.hash === 'string'
+}
+
 /**
  * @param {object} store
  * @param {string} email
@@ -244,8 +250,15 @@ export async function verifyPassword(password, stored) {
  */
 export async function registerUser(store, email, password) {
   const address = normalizeEmail(email)
-  if (store.users.some((user) => user.email === address)) return { error: 'exists' }
+  const existing = store.users.find((user) => user.email === address)
+  if (existing !== undefined && hasPassword(existing)) return { error: 'exists' }
   const secret = await hashPassword(password)
+  if (existing !== undefined) {
+    existing.salt = secret.salt
+    existing.hash = secret.hash
+    delete existing.aether
+    return issueSession(store, existing)
+  }
   const user = { id: randomUUID(), email: address, salt: secret.salt, hash: secret.hash }
   store.users.push(user)
   return issueSession(store, user)
@@ -259,7 +272,9 @@ export async function registerUser(store, email, password) {
 export async function loginUser(store, email, password) {
   const address = normalizeEmail(email)
   const user = store.users.find((row) => row.email === address)
-  if (user === undefined || !(await verifyPassword(password, user))) return { error: 'credentials' }
+  const stored = hasPassword(user) ? user : DUMMY_PASSWORD
+  const ok = await verifyPassword(password, stored)
+  if (user === undefined || !hasPassword(user) || !ok) return { error: 'credentials' }
   return issueSession(store, user)
 }
 
@@ -296,7 +311,7 @@ function purgeExpired(store) {
 }
 
 /**
- * After Aether OAuth UserInfo, open a local session. Cookie value is not stored.
+ * Open a local session for an email, creating a passwordless row if needed.
  * @param {object} store
  * @param {string} email
  */
@@ -304,7 +319,7 @@ export function sessionForEmail(store, email) {
   const address = normalizeEmail(email)
   let user = store.users.find((row) => row.email === address)
   if (user === undefined) {
-    user = { id: randomUUID(), email: address, aether: true }
+    user = { id: randomUUID(), email: address }
     store.users.push(user)
   }
   return issueSession(store, user)

@@ -164,21 +164,22 @@ test('http headers host-independent callback rate body and generic 500', async (
   process.env.DATABASE_PATH = join(dir, 'store.json')
   process.env.PORT = '0'
   process.env.PUBLIC_ORIGIN = 'https://madecoding.com'
-  process.env.AETHER_CLIENT_ID = 'madecoding-test'
-  process.env.AETHER_ORIGIN = 'https://mail.uamgo.com'
-  delete process.env.AETHER_REDIRECT_URI
   const { server } = await import(`../server.mjs?sec=${Date.now()}`)
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address()
   const origin = `http://127.0.0.1:${port}`
   try {
-    const start = await fetch(`${origin}/auth/aether`, {
-      redirect: 'manual',
-        headers: { 'cf-connecting-ip': '198.51.100.10', 'x-real-ip': '104.16.1.1' },
+    const start = await fetch(`${origin}/auth/login`, {
+      method: 'POST',
+      headers: {
+        origin: 'https://madecoding.com',
+        'content-type': 'application/json',
+        'cf-connecting-ip': '198.51.100.10',
+        'x-real-ip': '104.16.1.1',
+      },
+      body: JSON.stringify({ email: 'rate@made.local', password: 'long-enough' }),
     })
-    assert.equal(start.status, 302)
-    const location = start.headers.get('location') ?? ''
-    assert.match(location, /redirect_uri=https%3A%2F%2Fmadecoding.com%2Fauth%2Fcallback/)
+    assert.equal(start.status, 401)
     const fat = await fetch(`${origin}/webhooks/waffo`, {
       method: 'POST',
       headers: { 'cf-connecting-ip': '198.51.100.11', 'x-real-ip': '104.16.1.1', 'content-type': 'application/json' },
@@ -187,9 +188,15 @@ test('http headers host-independent callback rate body and generic 500', async (
     assert.equal(fat.status, 413)
     let last = 200
     for (let i = 0; i < 21; i += 1) {
-      const hit = await fetch(`${origin}/auth/aether`, {
-        redirect: 'manual',
-        headers: { 'cf-connecting-ip': '198.51.100.12', 'x-real-ip': '104.16.1.1' },
+      const hit = await fetch(`${origin}/auth/login`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://madecoding.com',
+          'content-type': 'application/json',
+          'cf-connecting-ip': '198.51.100.12',
+          'x-real-ip': '104.16.1.1',
+        },
+        body: JSON.stringify({ email: 'rate@made.local', password: 'long-enough' }),
       })
       last = hit.status
       if (i === 20) assert.equal(hit.headers.get('retry-after'), '60')

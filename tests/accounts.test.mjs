@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { createServer } from 'node:http'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -24,6 +23,7 @@ test('register then login', async () => {
   const again = await loginUser(store, 'a@b.c', 'long-enough')
   assert.equal(again.email, 'a@b.c')
   assert.equal((await loginUser(store, 'a@b.c', 'wrong-password')).error, 'credentials')
+  assert.equal((await loginUser(store, 'missing@b.c', 'long-enough')).error, 'credentials')
 })
 
 test('scrypt round trip', async () => {
@@ -43,26 +43,17 @@ test('sessionForEmail reuses the same user', () => {
   assert.notEqual(first.token, second.token)
 })
 
-test('http OAuth callback then me logout', async () => {
-  const mock = createServer((request, response) => {
-    const url = new URL(request.url ?? '/', 'http://aether.test')
-    if (request.method === 'POST' && url.pathname === '/oauth/token') {
-      response.setHeader('content-type', 'application/json')
-      response.end(JSON.stringify({ access_token: 'tok_test', token_type: 'Bearer' }))
-      return
-    }
-    if (request.method === 'GET' && url.pathname === '/oauth/userinfo') {
-      response.setHeader('content-type', 'application/json')
-      response.end(JSON.stringify({ email: 'user@made.local', sub: '1' }))
-      return
-    }
-    response.statusCode = 404
-    response.end('{}')
-  })
-  await new Promise((resolve) => mock.listen(0, '127.0.0.1', resolve))
-  const aetherPort = mock.address().port
-  process.env.AETHER_ORIGIN = `http://127.0.0.1:${aetherPort}`
-  process.env.AETHER_CLIENT_ID = 'madecoding-test'
+test('register sets a password on a passwordless row', async () => {
+  const store = { users: [], sessions: [], orders: [] }
+  sessionForEmail(store, 'old@b.c')
+  assert.equal((await loginUser(store, 'old@b.c', 'long-enough')).error, 'credentials')
+  const claimed = await registerUser(store, 'old@b.c', 'long-enough')
+  assert.equal(claimed.email, 'old@b.c')
+  assert.equal(store.users.length, 1)
+  assert.equal((await loginUser(store, 'old@b.c', 'long-enough')).email, 'old@b.c')
+})
+
+test('http register login me logout', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'madecoding-site-'))
   process.env.DATABASE_PATH = join(dir, 'store.json')
   process.env.PORT = '0'
@@ -72,22 +63,43 @@ test('http OAuth callback then me logout', async () => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const { port } = server.address()
   const origin = `http://127.0.0.1:${port}`
-  process.env.AETHER_REDIRECT_URI = `${origin}/auth/callback`
   process.env.PUBLIC_ORIGIN = origin
+  const json = { 'content-type': 'application/json', origin }
   try {
-    const start = await fetch(`${origin}/auth/aether`, { redirect: 'manual' })
-    assert.equal(start.status, 302)
-    const location = start.headers.get('location') ?? ''
-    assert.match(location, /\/oauth\/authorize/)
-    const setCookie = start.headers.getSetCookie?.() ?? []
-    const jar = setCookie.map((row) => row.split(';')[0]).join('; ')
-    const authorize = new URL(location)
-    const callback = await fetch(
-      `${origin}/auth/callback?code=abc&state=${authorize.searchParams.get('state')}`,
-      { redirect: 'manual', headers: { cookie: jar } },
-    )
-    assert.equal(callback.status, 302)
-    const cookies = callback.headers.getSetCookie?.() ?? []
+    const aether = await fetch(`${origin}/auth/aether`, { redirect: 'manual' })
+    assert.equal(aether.status, 404)
+    const cross = await fetch(`${origin}/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
+    })
+    assert.equal(cross.status, 403)
+    const registered = await fetch(`${origin}/auth/register`, {
+      method: 'POST',
+      headers: json,
+      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
+    })
+    assert.equal(registered.status, 200)
+    assert.deepEqual(await registered.json(), { email: 'user@made.local' })
+    const again = await fetch(`${origin}/auth/register`, {
+      method: 'POST',
+      headers: json,
+      body: JSON.stringify({ email: 'user@made.local', password: 'long-enough' }),
+    })
+    assert.equal(again.status, 409)
+    const wrong = await fetch(`${origin}/auth/login`, {
+      method: 'POST',
+      headers: json,
+      body: JSON.stringify({ email: 'user@made.local', password: 'wrong-password' }),
+    })
+    assert.equal(wrong.status, 401)
+    const loggedIn = await fetch(`${origin}/auth/login`, {
+      method: 'POST',
+      headers: json,
+      body: JSON.stringify({ email: 'User@Made.local', password: 'long-enough' }),
+    })
+    assert.equal(loggedIn.status, 200)
+    const cookies = loggedIn.headers.getSetCookie?.() ?? []
     const session = cookies.find((row) => row.startsWith('session='))?.split(';')[0]
     const csrf = cookies.find((row) => row.startsWith('csrf='))?.split(';')[0]
     assert.match(session ?? '', /session=/)
@@ -120,13 +132,8 @@ test('http OAuth callback then me logout', async () => {
     const home = await fetch(`${origin}/`)
     assert.match(home.headers.get('content-security-policy') ?? '', /default-src 'self'/)
     assert.equal(home.headers.get('x-content-type-options'), 'nosniff')
-    const wrongState = await fetch(`${origin}/auth/callback?code=abc&state=nope`, {
-      headers: { cookie: jar },
-    })
-    assert.equal(wrongState.status, 400)
   } finally {
     server.close()
-    mock.close()
     await rm(dir, { recursive: true })
   }
 })

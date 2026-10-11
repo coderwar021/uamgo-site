@@ -253,7 +253,7 @@ if (headerWrap !== null) {
 
   function paint() {
     open.textContent = currentEmail === null ? '登录' : currentEmail
-    open.title = currentEmail === null ? '用 Aether 登录' : `${currentEmail}，点击退出`
+    open.title = currentEmail === null ? '注册或登录' : `${currentEmail}，点击退出`
     window.dispatchEvent(new CustomEvent('madecoding-auth', { detail: { email: currentEmail } }))
   }
 
@@ -268,6 +268,69 @@ if (headerWrap !== null) {
     paint()
   }
 
+  const dialog = document.createElement('div')
+  dialog.className = 'account-dialog'
+  dialog.hidden = true
+  dialog.innerHTML = `
+    <form class="account-card">
+      <p class="account-title">账号</p>
+      <label>邮箱<input name="email" type="email" autocomplete="username" required></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required minlength="8"></label>
+      <p class="account-error" role="status"></p>
+      <div class="account-actions">
+        <button type="submit" name="intent" value="login">登录</button>
+        <button type="submit" name="intent" value="register">注册</button>
+      </div>
+    </form>`
+  document.body.append(dialog)
+  const form = dialog.querySelector('form')
+  const errorLine = dialog.querySelector('.account-error')
+  const ERRORS = {
+    email: '邮箱格式不对',
+    password: '密码至少 8 位',
+    exists: '这个邮箱已经注册，请登录',
+    credentials: '邮箱或密码不对',
+    csrf: '请刷新页面再试',
+    rate: '太频繁了，稍后再试',
+  }
+
+  function closeDialog() {
+    dialog.hidden = true
+    errorLine.textContent = ''
+  }
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) closeDialog()
+  })
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !dialog.hidden) closeDialog()
+  })
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const intent = event.submitter instanceof HTMLButtonElement ? event.submitter.value : 'login'
+    const payload = {
+      email: form.elements.namedItem('email').value,
+      password: form.elements.namedItem('password').value,
+    }
+    void (async () => {
+      const response = await fetch(intent === 'register' ? '/auth/register' : '/auth/login', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        errorLine.textContent = ERRORS[body.error] ?? '登录失败'
+        return
+      }
+      currentEmail = typeof body.email === 'string' ? body.email : null
+      closeDialog()
+      paint()
+    })()
+  })
+
   open.addEventListener('click', () => {
     if (currentEmail !== null) {
       void (async () => {
@@ -281,7 +344,8 @@ if (headerWrap !== null) {
       })()
       return
     }
-    window.location.assign('/auth/aether')
+    dialog.hidden = false
+    form.elements.namedItem('email').focus()
   })
 
   void refresh()

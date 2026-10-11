@@ -7,30 +7,20 @@ import { fileURLToPath } from 'node:url'
 import {
   assertPersistentStore,
   assertProductionStoreKey,
-  cookieValue,
   csrfCookie,
   csrfFromCookie,
   csrfOk,
   loadStore,
-  namedCookie,
+  loginUser,
+  registerUser,
   resolveDatabasePath,
   saveStore,
   sessionCookie,
-  sessionForEmail,
   sessionFromCookie,
   SESSION_AGE,
   userForToken,
+  validateCredentials,
 } from './accounts.mjs'
-import {
-  aetherMessage,
-  aetherReady,
-  aetherRedirectUri,
-  authorizeUrl,
-  createPkce,
-  emailFromUserinfo,
-  exchangeCode,
-  fetchUserinfo,
-} from './aether.mjs'
 import {
   checkoutAllowed,
   isUuid,
@@ -39,7 +29,6 @@ import {
   rateOk,
   accountOrderOk,
   readLimited,
-  safeEqual,
   sha256Hex,
 } from './security.mjs'
 import {
@@ -113,27 +102,6 @@ function sendJson(response, status, body, extraHeaders = {}) {
     ...extraHeaders,
   })
   response.end(payload)
-}
-
-function pkceName(request, name) {
-  return cookieValue(request.headers.cookie, `__Host-${name}`)
-    || cookieValue(request.headers.cookie, name)
-}
-
-function pkceSetCookies(request, pkce) {
-  const secure = isSecure(request)
-  return [
-    namedCookie('aether_state', pkce.state, secure, 600, { httpOnly: true, sameSite: 'Lax' }),
-    namedCookie('aether_verifier', pkce.verifier, secure, 600, { httpOnly: true, sameSite: 'Lax' }),
-  ]
-}
-
-function pkceClearCookies(request) {
-  const secure = isSecure(request)
-  return [
-    namedCookie('aether_state', '', secure, 0, { httpOnly: true, sameSite: 'Lax' }),
-    namedCookie('aether_verifier', '', secure, 0, { httpOnly: true, sameSite: 'Lax' }),
-  ]
 }
 
 function sessionCookies(request, token, csrf) {
@@ -270,97 +238,44 @@ async function handleApi(request, response) {
     return true
   }
 
-  if (method === 'GET' && url.pathname === '/auth/aether') {
+  if (method === 'POST' && (url.pathname === '/auth/register' || url.pathname === '/auth/login')) {
     if (!rateOk(request, 'auth')) {
       tooMany(response)
       return true
     }
-    if (!aetherReady()) {
-      sendJson(response, 503, {
-        error: 'aether_unconfigured',
-        message: '登录未开通：在 Railway 配置 AETHER_CLIENT_ID。回调地址填 https://madecoding.com/auth/callback。',
-      })
+    if (!originAllowed(request)) {
+      sendJson(response, 403, { error: 'csrf' })
       return true
     }
-    const redirectUri = aetherRedirectUri()
-    const pkce = createPkce()
-    response.writeHead(302, {
-      location: authorizeUrl(redirectUri, pkce),
-      'cache-control': 'no-store',
-      'set-cookie': pkceSetCookies(request, pkce),
-    })
-    response.end()
-    return true
-  }
-
-  if (method === 'GET' && url.pathname === '/auth/callback') {
-    if (!rateOk(request, 'auth')) {
-      tooMany(response)
-      return true
-    }
-    const error = url.searchParams.get('error')
-    if (typeof error === 'string' && error.length > 0) {
-      sendJson(response, 401, {
-        error,
-        message: aetherMessage(
-          { error, error_description: url.searchParams.get('error_description') },
-          'Aether 拒绝了授权。',
-        ),
-      })
-      return true
-    }
-    const code = url.searchParams.get('code') ?? ''
-    const state = url.searchParams.get('state') ?? ''
-    const expected = pkceName(request, 'aether_state')
-    const verifier = pkceName(request, 'aether_verifier')
-    if (code.length === 0 || state.length === 0 || expected.length === 0 || !safeEqual(state, expected) || verifier.length === 0) {
-      sendJson(response, 400, { error: 'state', message: 'OAuth 回调无效，请重新登录。' })
-      return true
-    }
-    const redirectUri = aetherRedirectUri()
-    let tokens
+    let body
     try {
-      tokens = await exchangeCode(code, redirectUri, verifier)
+      body = await readJson(request)
     } catch {
-      sendJson(response, 503, { error: 'token', message: '换 token 失败。' })
+      sendJson(response, 400, { error: 'json' })
       return true
     }
-    const access = tokens.json?.access_token
-    if (!tokens.ok || typeof access !== 'string') {
-      sendJson(response, 401, {
-        error: 'token',
-        message: aetherMessage(tokens.json, 'Aether 没有返回 access_token。'),
-      })
-      return true
-    }
-    let profile
-    try {
-      profile = await fetchUserinfo(access)
-    } catch {
-      sendJson(response, 503, { error: 'userinfo', message: '读取 UserInfo 失败。' })
-      return true
-    }
-    const email = emailFromUserinfo(profile.json)
-    if (!profile.ok || email.length === 0) {
-      sendJson(response, 401, {
-        error: 'userinfo',
-        message: aetherMessage(profile.json, 'Aether 没有返回邮箱。'),
-      })
+    const invalid = validateCredentials(body.email, body.password)
+    if (invalid !== undefined) {
+      sendJson(response, 400, { error: invalid })
       return true
     }
     const store = await loadStore(DB)
-    const result = sessionForEmail(store, email)
+    const result = url.pathname === '/auth/register'
+      ? await registerUser(store, body.email, body.password)
+      : await loginUser(store, body.email, body.password)
+    if (result.error === 'exists') {
+      sendJson(response, 409, { error: 'exists' })
+      return true
+    }
+    if (result.error === 'credentials') {
+      sendJson(response, 401, { error: 'credentials' })
+      return true
+    }
     await saveStore(DB, store)
-    audit('login', { email })
-    response.writeHead(302, {
-      location: '/',
-      'cache-control': 'no-store',
-      'set-cookie': [
-        ...sessionCookies(request, result.token, result.csrf),
-        ...pkceClearCookies(request),
-      ],
+    audit(url.pathname === '/auth/register' ? 'register' : 'login', { email: result.email })
+    sendJson(response, 200, { email: result.email }, {
+      'set-cookie': sessionCookies(request, result.token, result.csrf),
     })
-    response.end()
     return true
   }
 

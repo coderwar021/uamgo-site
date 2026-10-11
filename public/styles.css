@@ -198,6 +198,64 @@ nav a[aria-current='page'] {
 }
 .account-open:hover { transform: translateY(-3px) rotate(2deg); box-shadow: 5px 6px 0 var(--ink); }
 .account-open:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.account-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgb(34 30 51 / 0.45);
+}
+.account-dialog[hidden] { display: none; }
+.account-card {
+  width: min(22rem, 100%);
+  padding: 1.35rem 1.4rem 1.2rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 1.4rem;
+  background: var(--paper);
+  box-shadow: 8px 10px 0 var(--ink);
+}
+.account-title {
+  margin: 0 0 1rem;
+  font: 900 1.2rem var(--round);
+}
+.account-card label {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0 0 0.75rem;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.account-card input {
+  padding: 0.55rem 0.7rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 0.8rem;
+  background: #fff;
+  font: 600 1rem var(--round);
+}
+.account-error {
+  min-height: 1.2em;
+  margin: 0 0 0.8rem;
+  color: var(--tomato);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.account-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+.account-actions button {
+  flex: 1;
+  padding: 0.55rem 0.4rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 999px;
+  background: var(--mint);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 0.95rem var(--round);
+  cursor: pointer;
+}
+.account-actions button[value='register'] { background: var(--sun); }
 
 @media (max-width: 46rem) {
   .site-header .wrap { flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
