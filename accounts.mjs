@@ -36,7 +36,7 @@ export async function loadStore(path) {
 }
 
 function emptyStore() {
-  return { users: [], sessions: [], orders: [], waffo_products: {}, webhook_ids: [] }
+  return { users: [], sessions: [], orders: [], waffo_products: {}, webhook_ids: [], cli_grants: [] }
 }
 
 function normalizeStore(parsed) {
@@ -50,6 +50,7 @@ function normalizeStore(parsed) {
       ? parsed.waffo_products
       : {},
     webhook_ids: Array.isArray(parsed.webhook_ids) ? parsed.webhook_ids.slice(-8_000) : [],
+    cli_grants: Array.isArray(parsed.cli_grants) ? parsed.cli_grants : [],
   }
 }
 
