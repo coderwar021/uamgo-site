@@ -302,7 +302,7 @@ async function handleApi(request, response) {
     return true
     } catch (error) {
       console.error(error)
-      sendJson(response, 500, { error: 'internal', detail: String(error?.message ?? error) })
+      sendJson(response, 500, { error: 'internal' })
       return true
     }
   }
