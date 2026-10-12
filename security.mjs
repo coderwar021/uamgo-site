@@ -12,6 +12,7 @@ export function canonicalOrigin() {
 export const CANONICAL_ORIGIN = canonicalOrigin()
 
 const AUTH_LIMIT = createLimiter(60_000, 20)
+const CLI_LIMIT = createLimiter(60_000, 40)
 const ORDER_LIMIT = createLimiter(60_000, 30)
 const WEBHOOK_LIMIT = createLimiter(60_000, 120)
 const ACCOUNT_ORDER_LIMIT = createLimiter(3_600_000, 8)
@@ -79,12 +80,13 @@ export function clientIp(request) {
 
 /**
  * @param request incoming
- * @param kind auth | order | webhook
+ * @param kind auth | cli | order | webhook
  * @returns whether under quota
  */
 export function rateOk(request, kind) {
   const ip = clientIp(request)
   if (kind === 'auth') return AUTH_LIMIT(ip)
+  if (kind === 'cli') return CLI_LIMIT(ip)
   if (kind === 'order') return ORDER_LIMIT(ip)
   return WEBHOOK_LIMIT(ip)
 }

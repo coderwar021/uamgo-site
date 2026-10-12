@@ -241,6 +241,34 @@ nav a[aria-current='page'] {
   font-weight: 800;
   font-size: 0.85rem;
 }
+.cli-code {
+  margin: 0 0 1rem;
+  font: 900 1.8rem/1.2 var(--round);
+  letter-spacing: 0.12em;
+}
+.cli-form label {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0 0 0.75rem;
+  font-weight: 800;
+}
+.cli-form input {
+  padding: 0.55rem 0.7rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 0.8rem;
+  background: #fff;
+  font: 600 1rem var(--round);
+}
+.cli-form button {
+  padding: 0.55rem 1rem;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 999px;
+  background: var(--mint);
+  box-shadow: 3px 3px 0 var(--ink);
+  font: 900 0.95rem var(--round);
+  cursor: pointer;
+}
+.cli-hint { margin: 0 0 0.6rem; font-weight: 700; }
 .account-actions {
   display: flex;
   gap: 0.6rem;

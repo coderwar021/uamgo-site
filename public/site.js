@@ -1,5 +1,5 @@
 const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const PAGES = new Set(['/', '/install', '/deploy', '/config', '/terms'])
+const PAGES = new Set(['/', '/install', '/deploy', '/config', '/terms', '/cli'])
 const TONES = ['#ffd23f', '#ff6b57', '#3ddc97', '#8f7bff', '#ff9fcb', '#7fd0ff']
 
 let fxLayer = null

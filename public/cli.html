@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>终端登录 — madecoding</title>
+<meta name="description" content="在网页登录后，把 API 密钥授权给本机终端。">
+<link rel="icon" href="/favicon.svg">
+<link rel="stylesheet" href="/styles.css?v=6">
+<script src="/boot.js?v=1"></script>
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+</div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/">
+      <span class="mark" aria-hidden="true"><span class="ball"></span></span>
+      madecoding
+    </a>
+    <nav aria-label="主导航">
+      <a href="/">首页</a>
+      <a href="/install">安装</a>
+      <a href="/config">配置</a>
+      <a href="/terms">协议</a>
+    </nav>
+    <a class="nav-deploy" href="/deploy">模型部署</a>
+  </div>
+</header>
+
+<main class="wrap page">
+  <p class="kicker"><span class="ep">终端</span>Sign in</p>
+  <h1 class="title">在这里登录，终端就能用了。</h1>
+  <p id="cli-lead">终端已经打开了这一页。先登录或注册，再把 <a href="https://madeapi.com/keys">madeapi.com/keys</a> 的密钥授权给它。</p>
+
+  <div class="tv tv-paper scroll-reveal">
+    <div class="tv-bar"><i></i><i></i><i></i><b>登录码</b></div>
+    <p id="cli-code" class="cli-code">从终端打开这一页</p>
+    <form id="cli-form" class="cli-form" hidden>
+      <label>
+        API 密钥
+        <input name="api_key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…">
+      </label>
+      <p id="cli-hint" class="cli-hint"></p>
+      <p id="cli-error" class="account-error" role="status"></p>
+      <button type="submit">授权终端</button>
+    </form>
+    <p id="cli-done" hidden>可以回到终端了。</p>
+  </div>
+</main>
+
+<div class="ground" aria-hidden="true">
+  <span class="flower f1"></span>
+  <span class="flower f2"></span>
+  <span class="flower f3"></span>
+  <span class="flower f4"></span>
+  <span class="flower f5"></span>
+  <span class="flower f6"></span>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <a href="/">首页</a>
+    <a href="/install">安装</a>
+    <a href="/terms">用户协议</a>
+    <span class="spacer">© 2026 madecoding</span>
+  </div>
+</footer>
+
+<script src="/site.js?v=6"></script>
+<script src="/cli.js?v=1"></script>
+</body>
+</html>

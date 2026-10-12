@@ -23,6 +23,7 @@ import {
 } from './accounts.mjs'
 import {
   checkoutAllowed,
+  canonicalOrigin,
   isUuid,
   lockResponse,
   originAllowed,
@@ -46,6 +47,7 @@ import {
   forwardWaffoWebhook,
 } from './rental.mjs'
 import { audit } from './audit.mjs'
+import { approveGrant, pollGrant, startGrant, userHasKey } from './cli.mjs'
 
 const ROOT = resolve(fileURLToPath(new URL('./public', import.meta.url)))
 const PORT = Number(process.env.PORT ?? 3000)
@@ -276,6 +278,104 @@ async function handleApi(request, response) {
     sendJson(response, 200, { email: result.email }, {
       'set-cookie': sessionCookies(request, result.token, result.csrf),
     })
+    return true
+  }
+
+  if (method === 'POST' && url.pathname === '/cli/start') {
+    if (!rateOk(request, 'cli')) {
+      tooMany(response)
+      return true
+    }
+    const store = await loadStore(DB)
+    const grant = startGrant(store)
+    await saveStore(DB, store)
+    const origin = canonicalOrigin()
+    sendJson(response, 200, {
+      device_code: grant.device_code,
+      user_code: grant.user_code,
+      verification_uri: `${origin}/cli`,
+      verification_uri_complete: `${origin}/cli?code=${encodeURIComponent(grant.user_code)}`,
+      expires_in: grant.expires_in,
+      interval: grant.interval,
+    })
+    return true
+  }
+
+  if (method === 'POST' && url.pathname === '/cli/poll') {
+    if (!rateOk(request, 'cli')) {
+      tooMany(response)
+      return true
+    }
+    let body
+    try {
+      body = await readJson(request)
+    } catch {
+      sendJson(response, 400, { error: 'json' })
+      return true
+    }
+    const store = await loadStore(DB)
+    const result = pollGrant(store, body.device_code)
+    if (result.error === 'pending') {
+      sendJson(response, 202, { error: 'pending' })
+      return true
+    }
+    if (result.error !== undefined) {
+      sendJson(response, 410, { error: result.error })
+      return true
+    }
+    await saveStore(DB, store)
+    sendJson(response, 200, { api_key: result.api_key })
+    return true
+  }
+
+  if (method === 'GET' && url.pathname === '/cli/ready') {
+    const store = await loadStore(DB)
+    const user = userForToken(store, sessionFromCookie(request.headers.cookie))
+    if (user !== undefined) await saveStore(DB, store)
+    sendJson(response, 200, {
+      email: user?.email ?? null,
+      has_key: user !== undefined && userHasKey(user),
+    })
+    return true
+  }
+
+  if (method === 'POST' && url.pathname === '/cli/approve') {
+    if (!rateOk(request, 'cli')) {
+      tooMany(response)
+      return true
+    }
+    const store = await loadStore(DB)
+    if (!requireCsrf(request, store)) {
+      sendJson(response, 403, { error: 'csrf' })
+      return true
+    }
+    const user = userForToken(store, sessionFromCookie(request.headers.cookie))
+    if (user === undefined) {
+      sendJson(response, 401, { error: 'auth', message: '请先点右上角登录。' })
+      return true
+    }
+    let body
+    try {
+      body = await readJson(request)
+    } catch {
+      sendJson(response, 400, { error: 'json' })
+      return true
+    }
+    const key = typeof body.api_key === 'string' && body.api_key.trim().length > 0
+      ? body.api_key
+      : user.madeapi_key
+    const result = approveGrant(store, body.user_code, key, user.id)
+    if (result.error === 'code') {
+      sendJson(response, 404, { error: 'code', message: '这个终端登录码无效或已过期。' })
+      return true
+    }
+    if (result.error === 'key') {
+      sendJson(response, 400, { error: 'key', message: '请粘贴 madeapi.com 的 API 密钥。' })
+      return true
+    }
+    await saveStore(DB, store)
+    audit('cli_approve', { user_id: user.id })
+    sendJson(response, 200, { ok: true })
     return true
   }
 
