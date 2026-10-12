@@ -28,6 +28,7 @@ export function newUserCode() {
  * @returns {{ device_code: string, user_code: string, expires_in: number, interval: number }}
  */
 export function startGrant(store) {
+  if (!Array.isArray(store.cli_grants)) store.cli_grants = []
   purgeCliGrants(store)
   const device_code = randomBytes(32).toString('base64url')
   const user_code = newUserCode()
