@@ -286,6 +286,7 @@ async function handleApi(request, response) {
       tooMany(response)
       return true
     }
+    try {
     const store = await loadStore(DB)
     const grant = startGrant(store)
     await saveStore(DB, store)
@@ -299,6 +300,11 @@ async function handleApi(request, response) {
       interval: grant.interval,
     })
     return true
+    } catch (error) {
+      console.error(error)
+      sendJson(response, 500, { error: 'internal', detail: String(error?.message ?? error) })
+      return true
+    }
   }
 
   if (method === 'POST' && url.pathname === '/cli/poll') {
