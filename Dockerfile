@@ -8,7 +8,7 @@ FROM node:22.21.0-bookworm-slim@sha256:f9f7f95dcf1f007b007c4dcd44ea8f7773f931b71
 WORKDIR /app
 RUN mkdir -p /app/data && chown node:node /app/data
 COPY --from=deps /app/node_modules ./node_modules
-COPY --chown=node:node package.json package-lock.json server.mjs accounts.mjs audit.mjs cloudflare-ips.mjs rental.mjs security.mjs site-sign.mjs waffo.mjs ./
+COPY --chown=node:node package.json package-lock.json server.mjs accounts.mjs audit.mjs cli.mjs cloudflare-ips.mjs rental.mjs security.mjs site-sign.mjs waffo.mjs ./
 COPY --chown=node:node public ./public
 USER node
 ENV NODE_ENV=production
